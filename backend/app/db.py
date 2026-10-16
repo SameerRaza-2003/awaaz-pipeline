@@ -60,7 +60,8 @@ class TrustedContact(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     session_id: Mapped[str] = mapped_column(ForeignKey("sessions.id"), index=True)
     name: Mapped[str] = mapped_column(String)
-    phone: Mapped[str] = mapped_column(String)
+    phone: Mapped[str | None] = mapped_column(String, nullable=True)
+    discord_webhook_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(TZDateTime, default=utcnow)
 
 
@@ -186,6 +187,20 @@ async def init_db() -> None:
     _sessionmaker = async_sessionmaker(_engine, expire_on_commit=False)
     async with _engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_add_missing_columns)
+
+
+def _add_missing_columns(conn) -> None:
+    """Tiny forward-only migration: add columns introduced after a database was created."""
+    from sqlalchemy import inspect
+
+    insp = inspect(conn)
+    for table in Base.metadata.sorted_tables:
+        existing = {c["name"] for c in insp.get_columns(table.name)}
+        for col in table.columns:
+            if col.name not in existing:
+                ddl = col.type.compile(dialect=conn.dialect)
+                conn.exec_driver_sql(f"ALTER TABLE {table.name} ADD COLUMN {col.name} {ddl}")
 
 
 async def close_db() -> None:

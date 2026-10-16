@@ -4,6 +4,7 @@ Enforces OUTBOUND_MODE, the sandbox allowlist and idempotency via dispatch_log.
 """
 
 import asyncio
+import re
 import smtplib
 import ssl
 import uuid
@@ -11,6 +12,8 @@ from dataclasses import dataclass
 from email.message import EmailMessage
 from email.utils import formataddr, make_msgid
 from typing import Any, Literal, Protocol
+
+import httpx
 from xml.sax.saxutils import escape
 
 from sqlalchemy import select
@@ -20,7 +23,8 @@ from app.config import get_settings, normalize_recipient
 from app.db import DispatchLog, SessionLocal
 from app.events import bus
 
-Kind = Literal["sms", "call", "community_email", "news_email"]
+Kind = Literal["sms", "call", "discord", "community_email", "news_email"]
+DISCORD_WEBHOOK_RE = re.compile(r"^https://(?:canary\.|ptb\.)?(?:discord|discordapp)\.com/api/webhooks/(\d{5,25})/([\w-]{20,})/?$")
 MAX_SEND_ATTEMPTS = 2
 RETRY_BASE_DELAY_S = 1.5
 
@@ -106,6 +110,28 @@ class SmtpEmailSender:
         return msg["Message-ID"]
 
 
+class DiscordSender:
+    """Posts to a Discord channel webhook. Free, no account approval needed."""
+
+    def send(self, webhook_url: str, content: str) -> str:
+        r = httpx.post(
+            webhook_url.rstrip("/"),
+            params={"wait": "true"},
+            json={"username": "Awaaz", "content": content[:2000], "allowed_mentions": {"parse": []}},
+            timeout=15,
+        )
+        if r.status_code in (401, 403, 404):
+            raise RuntimeError(f"Discord rejected the webhook ({r.status_code}); check the webhook URL")
+        r.raise_for_status()
+        return str(r.json().get("id", "discord"))
+
+
+def discord_recipient(webhook_url: str | None) -> str | None:
+    """Webhook URLs contain a secret token: logs and events only ever see 'discord:<webhook id>'."""
+    m = DISCORD_WEBHOOK_RE.match((webhook_url or "").strip())
+    return f"discord:{m.group(1)}" if m else None
+
+
 # Factories are module level so tests can swap them (and assert they are never called in dry_run).
 def sms_provider_factory() -> SmsProvider:
     return TwilioProvider()
@@ -115,6 +141,10 @@ def email_sender_factory() -> EmailSender:
     return SmtpEmailSender()
 
 
+def discord_sender_factory() -> DiscordSender:
+    return DiscordSender()
+
+
 def twiml_say(text: str) -> str:
     safe = escape(text)
     say = f'<Say voice="alice"><prosody rate="slow">{safe}</prosody></Say>'
@@ -122,6 +152,8 @@ def twiml_say(text: str) -> str:
 
 
 def is_valid_recipient(kind: str, recipient: str) -> bool:
+    if kind == "discord":
+        return recipient.startswith("discord:") and recipient[8:].isdigit()
     if kind in ("sms", "call"):
         digits = recipient.lstrip("+")
         return recipient.startswith("+") and digits.isdigit() and 8 <= len(digits) <= 15
@@ -158,7 +190,7 @@ class OutboundGuard:
 
         if mode == "dry_run":
             res = DispatchResult(to, kind, "dry_run", provider_id=f"dry_{uuid.uuid4().hex[:12]}", mode=mode)
-        elif mode == "sandbox" and to not in s.allowlist:
+        elif mode == "sandbox" and to not in s.allowlist and not (kind == "discord" and "discord:*" in s.allowlist):
             res = DispatchResult(to, kind, "blocked", error="recipient not in OUTBOUND_ALLOWLIST", mode=mode)
         else:
             res = await self._send(kind, to, payload, mode)
@@ -212,6 +244,8 @@ class OutboundGuard:
                     sid = await asyncio.to_thread(sms_provider_factory().send_sms, to, payload["body"])
                 elif kind == "call":
                     sid = await asyncio.to_thread(sms_provider_factory().place_call, to, twiml_say(payload["say_text"]))
+                elif kind == "discord":
+                    sid = await asyncio.to_thread(discord_sender_factory().send, payload["webhook_url"], payload["body"])
                 else:
                     sid = await asyncio.to_thread(
                         email_sender_factory().send, to, payload["subject"], payload["body"]
@@ -230,7 +264,7 @@ class OutboundGuard:
         if res.kind in ("community_email", "news_email"):
             data["subject"] = payload.get("subject")
             data["body_preview"] = (payload.get("body") or "")[:400]
-        elif res.kind == "sms":
+        elif res.kind in ("sms", "discord"):
             data["body"] = payload.get("body")
         else:
             data["say_text"] = payload.get("say_text")

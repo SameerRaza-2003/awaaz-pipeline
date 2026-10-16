@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     twilio_auth_token: str = ""
     twilio_from_number: str = ""
     google_maps_api_key: str = ""
+    geocoder: Literal["nominatim", "google"] = "nominatim"
+    nominatim_email: str = ""  # sent in the User-Agent, as the OpenStreetMap usage policy asks
 
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 465
@@ -93,6 +95,8 @@ class Settings(BaseSettings):
 
 def normalize_recipient(value: str) -> str:
     value = value.strip()
+    if value.lower().startswith("discord:"):
+        return "discord:" + value.split(":", 1)[1].strip()
     if "@" in value:
         return value.lower()
     digits = "".join(c for c in value if c.isdigit())

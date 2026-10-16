@@ -16,6 +16,7 @@ async def fresh_env(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     monkeypatch.setenv("OUTBOUND_MODE", "dry_run")
     monkeypatch.setenv("SCHEDULER_POLL_S", "0.2")
+    monkeypatch.setenv("GEOCODER", "nominatim")
     get_settings.cache_clear()
     crypto.reset()
 
@@ -24,6 +25,15 @@ async def fresh_env(tmp_path, monkeypatch):
 
     monkeypatch.setattr(outbound, "sms_provider_factory", _no_network)
     monkeypatch.setattr(outbound, "email_sender_factory", _no_network)
+    monkeypatch.setattr(outbound, "discord_sender_factory", _no_network)
+
+    from app.tools import maps
+
+    async def _no_geocode(lat, lng):
+        return {"address": None, "reason": "geocoding disabled in tests"}
+
+    monkeypatch.setattr(maps, "_nominatim", _no_geocode)
+    monkeypatch.setattr(maps, "_google", _no_geocode)
 
     await db.init_db()
     await police_db.init_police_db()

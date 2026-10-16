@@ -11,6 +11,7 @@ class LocationReport(BaseModel):
     lng: float | None = None
     accuracy_m: float | None = None
     address: str | None = None
+    address_source: str | None = None
     maps_link: str | None = None
     captured_at: str | None = None
     note: str | None = Field(default=None, description="Typed location text from the user, if any")

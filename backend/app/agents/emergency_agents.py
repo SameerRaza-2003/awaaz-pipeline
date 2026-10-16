@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from app.agents.runner import AgentSpec, RunContext, make_tool
 from app.agents.schemas import AlertResult, LocationReport
 from app.config import normalize_recipient
-from app.outbound import delivery_status, guard
+from app.outbound import delivery_status, discord_recipient, guard
 from app.tools import maps
 
 
@@ -70,8 +70,9 @@ You receive the location report and the recipients inside <data> tags.
    and needs help now, include the Google Maps link (or say the location is unavailable and give any typed
    location), and the last-updated time. Call send_sms once for each recipient listed under sms_recipients.
 2. Write a short spoken script (2-3 sentences, simple words, no URLs) and call place_call to the call_recipient.
-3. Optionally call get_delivery_status for the returned sids.
-4. Return AlertResult with the sids and statuses the tools returned. Never invent sids.
+3. If discord_available is true, call send_discord_alert once with the same alert text (you may use a few more words).
+4. Optionally call get_delivery_status for the returned sids.
+5. Return AlertResult with the sids and statuses the tools returned. Never invent sids.
 Only the listed recipients can be contacted; the tools reject anyone else."""
 
 
@@ -87,6 +88,10 @@ class CallArgs(BaseModel):
 
 class SidArgs(BaseModel):
     sid: str
+
+
+class DiscordArgs(BaseModel):
+    body: str = Field(min_length=10, max_length=1800)
 
 
 def ensure_link(body: str, report: dict) -> str:
@@ -132,6 +137,21 @@ async def _place_call(ctx: RunContext, to: str, say_text: str) -> dict:
     return {"to": res.to, "sid": res.provider_id, "status": res.status, "error": res.error}
 
 
+async def _send_discord_alert(ctx: RunContext, body: str) -> dict:
+    url = ctx.state.get("discord_url")
+    if not url:
+        return {"status": "skipped", "error": "the trusted contact has no Discord webhook"}
+    res = await send_discord(ctx.session_id, ctx.state["dispatch_key"], url, ensure_link(body, ctx.state["report"]),
+                             agent=ctx.agent, node=ctx.node, run_id=ctx.run_id)
+    return {"to": res.to, "sid": res.provider_id, "status": res.status, "error": res.error}
+
+
+async def send_discord(session_id: str, key: str, url: str, body: str, **kw):
+    """The recipient comes from the stored webhook, never from the model."""
+    return await guard.dispatch(kind="discord", key=key, recipient=discord_recipient(url) or "discord:invalid",
+                                session_id=session_id, payload={"body": body, "webhook_url": url}, **kw)
+
+
 async def _get_delivery_status(ctx: RunContext, sid: str) -> dict:
     return {"sid": sid, "status": await delivery_status(sid)}
 
@@ -140,6 +160,7 @@ def _twilio_tools(ctx: RunContext):
     return [
         make_tool(ctx, "send_sms", "Send one SMS to one allowed recipient.", SmsArgs, _send_sms),
         make_tool(ctx, "place_call", "Call the trusted contact; say_text is read aloud twice, slowly.", CallArgs, _place_call),
+        make_tool(ctx, "send_discord_alert", "Post the alert to the trusted contact's Discord channel (if they set one up).", DiscordArgs, _send_discord_alert),
         make_tool(ctx, "get_delivery_status", "Delivery status for an SMS or call sid.", SidArgs, _get_delivery_status),
     ]
 

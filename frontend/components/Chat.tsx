@@ -182,6 +182,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
     let location: any = null;
     let sms: any = null;
     let call: any = null;
+    let discord: any = null;
     let started = false;
     let finished = false;
     let warning: string | null = null;
@@ -194,10 +195,11 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
         else updates += 1;
       }
       if (e.kind === "outbound" && e.data.kind === "call" && !call) call = e.data;
+      if (e.kind === "outbound" && e.data.kind === "discord" && !discord && e.agent !== "setup") discord = e.data;
       if (e.kind === "workflow.end" && e.data.workflow === "emergency") finished = true;
       if ((e.kind === "error" || e.kind === "status") && e.data.warning) warning = e.data.message;
     }
-    return { location, sms, call, started, finished, warning, updates };
+    return { location, sms, call, discord, started, finished, warning, updates };
   }, [events]);
 
   // ---------- report ----------
@@ -313,12 +315,21 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
                 <Chip ok={!!emergency.location?.location_available} active={!emergency.location}>
                   {emergency.location ? (emergency.location.location_available ? "Location found" : "Location unavailable") : "Finding location"}
                 </Chip>
-                <Chip ok={!!emergency.sms && emergency.sms.status !== "failed"} active={!emergency.sms}>
-                  {emergency.sms ? `SMS ${emergency.sms.status === "dry_run" ? "sent (dry run)" : emergency.sms.status}` : "Sending SMS"}
-                </Chip>
-                <Chip ok={!!emergency.call && emergency.call.status !== "failed"} active={!emergency.call}>
-                  {emergency.call ? `Call ${emergency.call.status === "dry_run" ? "placed (dry run)" : emergency.call.status}` : "Calling your contact…"}
-                </Chip>
+                {(emergency.sms || !emergency.finished) && (
+                  <Chip ok={!!emergency.sms && emergency.sms.status !== "failed"} active={!emergency.sms}>
+                    {emergency.sms ? `SMS ${emergency.sms.status === "dry_run" ? "sent (dry run)" : emergency.sms.status}` : "Sending SMS"}
+                  </Chip>
+                )}
+                {(emergency.call || !emergency.finished) && (
+                  <Chip ok={!!emergency.call && emergency.call.status !== "failed"} active={!emergency.call}>
+                    {emergency.call ? `Call ${emergency.call.status === "dry_run" ? "placed (dry run)" : emergency.call.status}` : "Calling your contact…"}
+                  </Chip>
+                )}
+                {emergency.discord && (
+                  <Chip ok={emergency.discord.status !== "failed"}>
+                    Discord {emergency.discord.status === "dry_run" ? "posted (dry run)" : emergency.discord.status}
+                  </Chip>
+                )}
                 {emergency.updates > 0 && <Chip ok>{emergency.updates} location update(s)</Chip>}
               </div>
               {emergency.warning && (
@@ -345,6 +356,9 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
                   <a className="text-sm text-run underline break-all" href={emergency.location.maps_link} target="_blank" rel="noreferrer">
                     {emergency.location.address || emergency.location.maps_link}
                   </a>
+                  {emergency.location.address_source === "openstreetmap" && (
+                    <p className="text-[11px] text-muted">Address © OpenStreetMap contributors</p>
+                  )}
                 </>
               )}
               {phase === "emergency" && (

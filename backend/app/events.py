@@ -65,13 +65,16 @@ def mask_phone(text: str) -> str:
     return PHONE_RE.sub(repl, text)
 
 
+DISCORD_URL_RE = re.compile(r"(https://(?:\w+\.)?discord(?:app)?\.com/api/webhooks/\d+/)[\w-]+")
+
+
 def mask_email(text: str) -> str:
     return EMAIL_RE.sub(lambda m: f"{m.group(1)}***{m.group(2)}", text)
 
 
 def mask(value: Any, *, emails: bool = False) -> Any:
     if isinstance(value, str):
-        out = mask_phone(value)
+        out = mask_phone(DISCORD_URL_RE.sub(r"\1***", value))
         return mask_email(out) if emails else out
     if isinstance(value, dict):
         out: dict[str, Any] = {}

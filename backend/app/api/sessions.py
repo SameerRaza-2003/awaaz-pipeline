@@ -1,3 +1,4 @@
+import secrets
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -7,7 +8,8 @@ from app import sessions
 from app.api.sse import event_stream, parse_last_id
 from app.config import normalize_recipient
 from app.events import bus
-from app.outbound import is_valid_recipient
+from app.agents.emergency_agents import send_discord
+from app.outbound import discord_recipient, is_valid_recipient
 from app.workflows import emergency
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
@@ -26,7 +28,8 @@ class CreateSession(BaseModel):
 
 class TrustedContactIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
-    phone: str = Field(min_length=6, max_length=24)
+    phone: str | None = Field(default=None, max_length=24)
+    discord_webhook: str | None = Field(default=None, max_length=300)
 
 
 class SettingsIn(BaseModel):
@@ -59,13 +62,14 @@ async def create_session(body: CreateSession | None = None):
 async def get_session(session_id: str):
     row = await require_session(session_id)
     contact = await sessions.get_trusted_contact(session_id)
+    discord = await sessions.get_contact_discord(session_id)
     state = await sessions.load_state(session_id)
     return {
         "session_id": row.id,
         "phase": row.phase,
         "country": row.country,
         "locale": row.locale,
-        "trusted_contact": {"name": contact[0], "phone": contact[1]} if contact else None,
+        "trusted_contact": {"name": contact[0], "phone": contact[1], "has_discord": bool(discord)} if contact else None,
         "transcript": state.get("transcript", []),
         "drafts": state.get("drafts"),
         "receipt": state.get("receipt"),
@@ -76,10 +80,18 @@ async def get_session(session_id: str):
 async def put_settings(session_id: str, body: SettingsIn):
     await require_session(session_id)
     if body.trusted_contact:
-        phone = normalize_recipient(body.trusted_contact.phone)
-        if not is_valid_recipient("sms", phone):
+        tc = body.trusted_contact
+        phone = normalize_recipient(tc.phone) if tc.phone and tc.phone.strip() else None
+        if phone and not is_valid_recipient("sms", phone):
             raise HTTPException(422, "phone must be in international format, e.g. +923001234567")
-        await sessions.set_trusted_contact(session_id, body.trusted_contact.name.strip(), phone)
+        webhook = (tc.discord_webhook or "").strip() or None
+        if webhook and not discord_recipient(webhook):
+            raise HTTPException(422, "Discord webhook must look like https://discord.com/api/webhooks/<id>/<token>")
+        if not phone and not webhook:
+            raise HTTPException(422, "add a phone number or a Discord webhook for your trusted contact")
+        if webhook is None and tc.discord_webhook is None:
+            webhook = await sessions.get_contact_discord(session_id)  # keep the saved one if the field was not sent
+        await sessions.set_trusted_contact(session_id, tc.name.strip(), phone, webhook)
     await sessions.update_settings(session_id, country=body.country, locale=body.locale)
     return {"ok": True}
 
@@ -112,3 +124,18 @@ async def location(session_id: str, body: Location):
 async def safe(session_id: str):
     await require_session(session_id)
     return await emergency.mark_safe(session_id)
+
+
+@router.post("/{session_id}/discord-test")
+async def discord_test(session_id: str):
+    """Lets the survivor check the webhook before an emergency. Goes through the outbound guard like everything else."""
+    await require_session(session_id)
+    url = await sessions.get_contact_discord(session_id)
+    if not url:
+        raise HTTPException(404, "no Discord webhook saved")
+    res = await send_discord(
+        session_id, f"test:{secrets.token_hex(4)}", url,
+        "Awaaz test message: this channel will receive emergency alerts from someone who trusts you. No action needed.",
+        agent="setup", node="twilio_agent",
+    )
+    return res.as_dict()

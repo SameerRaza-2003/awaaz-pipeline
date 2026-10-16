@@ -6,14 +6,15 @@ from typing import Any
 
 from sqlalchemy import select
 
-from app.agents.emergency_agents import ensure_link, location_agent, twilio_agent
+from app.agents.emergency_agents import ensure_link, location_agent, send_discord, twilio_agent
 from app.agents.runner import AgentFailed, runner, wrap_data
 from app.agents.schemas import AlertResult, LocationReport
 from app.config import get_settings, normalize_recipient
 from app.db import DispatchLog, Emergency, SessionLocal, utcnow
 from app.events import bus
 from app.outbound import guard
-from app.sessions import get_trusted_contact, set_phase
+from app.outbound import discord_recipient
+from app.sessions import get_contact_discord, get_trusted_contact, set_phase
 from app.tools import maps
 
 _tasks: set[asyncio.Task] = set()
@@ -93,6 +94,7 @@ async def deterministic_location(session_id: str) -> LocationReport:
         lng=loc["lng"],
         accuracy_m=loc.get("accuracy_m"),
         address=geo.get("address"),
+        address_source=geo.get("source"),
         maps_link=maps.build_maps_link(loc["lat"], loc["lng"]),
         captured_at=loc.get("captured_at"),
         note=loc.get("note"),
@@ -136,19 +138,24 @@ def _validated_report(agent_report: LocationReport, truth: LocationReport) -> Lo
         return truth
     if abs(agent_report.lat - truth.lat) > 1e-4 or abs(agent_report.lng - truth.lng) > 1e-4:  # type: ignore[operator]
         return truth
-    return truth.model_copy(update={"address": agent_report.address or truth.address})
+    # Keep the tool's address: it carries the source needed for attribution.
+    return truth.model_copy(update={"address": truth.address or agent_report.address})
 
 
 async def run(session_id: str, emergency_id: int) -> dict[str, Any]:
     s = get_settings()
     name, call_to, sms_to = await resolve_recipients(session_id)
-    if not call_to:
+    discord_url = await get_contact_discord(session_id)
+    if not call_to and not discord_url:
         await bus.publish(
             session_id,
             "error",
             node="twilio_agent",
             data={"message": "No trusted contact configured and DEFAULT_TRUSTED_CONTACT is empty. Add one in Setup.", "warning": True},
         )
+    elif not call_to:
+        await bus.publish(session_id, "status", node="twilio_agent",
+                          data={"message": "No phone number for your trusted contact: alerting by Discord only.", "warning": True})
     elif not await get_trusted_contact(session_id):
         await bus.publish(
             session_id,
@@ -175,17 +182,18 @@ async def run(session_id: str, emergency_id: int) -> dict[str, Any]:
     # 2. Alert + call
     key = f"em{emergency_id}:alert"
     sent: AlertResult | None = None
-    if call_to:
+    if call_to or discord_url:
         state = {
             "report": report.model_dump(mode="json"),
             "sms_recipients": sms_to,
-            "call_recipient": call_to,
+            "call_recipient": call_to or "",
             "dispatch_key": key,
+            "discord_url": discord_url,
         }
         prompt = wrap_data(
             "data",
-            f"contact_name: {name}\nsms_recipients: {sms_to}\ncall_recipient: {call_to}\n"
-            f"location_report: {report.model_dump_json()}",
+            f"contact_name: {name}\nsms_recipients: {sms_to}\ncall_recipient: {call_to or 'none'}\n"
+            f"discord_available: {bool(discord_url)}\nlocation_report: {report.model_dump_json()}",
         )
         try:
             res = await runner.run(
@@ -198,7 +206,7 @@ async def run(session_id: str, emergency_id: int) -> dict[str, Any]:
             sent = res.output
         except AgentFailed:
             await bus.publish(session_id, "step", node="twilio_agent", data={"fallback": True, "message": "Twilio Agent failed; sending with the fixed template"})
-        await ensure_alert_sent(session_id, key, name or "trusted contact", report, sms_to, call_to)
+        await ensure_alert_sent(session_id, key, name or "trusted contact", report, sms_to, call_to, discord_url)
 
     async with SessionLocal() as db:
         em = await db.get(Emergency, emergency_id)
@@ -222,7 +230,7 @@ async def deterministic_location_safe(session_id: str) -> LocationReport:
         return LocationReport(location_available=False)
 
 
-async def ensure_alert_sent(session_id, key, name, report, sms_to, call_to) -> None:
+async def ensure_alert_sent(session_id, key, name, report, sms_to, call_to, discord_url=None) -> None:
     """Check dispatch_log and fill every gap with the fixed template. Idempotent by construction."""
     async with SessionLocal() as db:
         rows = (await db.scalars(select(DispatchLog).where(DispatchLog.public_ref == key))).all()
@@ -233,6 +241,9 @@ async def ensure_alert_sent(session_id, key, name, report, sms_to, call_to) -> N
             await bus.publish(session_id, "step", node="twilio_agent", data={"fallback": True, "message": f"Fallback SMS to {to}"})
             await guard.dispatch(kind="sms", key=key, recipient=to, session_id=session_id,
                                  payload={"body": ensure_link(body, report.model_dump())}, agent="fallback", node="twilio_agent")
+    if discord_url and ("discord", discord_recipient(discord_url)) not in done:
+        await bus.publish(session_id, "step", node="twilio_agent", data={"fallback": True, "message": "Fallback Discord alert"})
+        await send_discord(session_id, key, discord_url, ensure_link(body, report.model_dump()), agent="fallback", node="twilio_agent")
     if call_to and ("call", call_to) not in done:
         await bus.publish(session_id, "step", node="twilio_agent", data={"fallback": True, "message": f"Fallback call to {call_to}"})
         await guard.dispatch(kind="call", key=key, recipient=call_to, session_id=session_id,
@@ -265,6 +276,8 @@ async def tracking_update(session_id: str, lat: float, lng: float, accuracy: flo
     for to in sms_to:
         await guard.dispatch(kind="sms", key=f"em{em.id}:update{n}", recipient=to, session_id=session_id,
                              payload={"body": body}, agent="tracking_updater", node="twilio_agent")
+    if discord_url := await get_contact_discord(session_id):
+        await send_discord(session_id, f"em{em.id}:update{n}", discord_url, body, agent="tracking_updater", node="twilio_agent")
     await bus.publish(session_id, "tool.end", agent="tracking_updater", node="twilio_agent",
                       data={"tool": "send_sms", "result": {"update": n, "recipients": len(sms_to)}})
     return {"tracking": True, "sent": True, "update": n}
@@ -279,10 +292,12 @@ async def mark_safe(session_id: str) -> dict:
         row.ended_at = utcnow()
         await db.commit()
     _, _, sms_to = await resolve_recipients(session_id)
+    safe_text = "Awaaz: the person who sent you the emergency alert has marked themselves SAFE. Location tracking has stopped."
     for to in sms_to:
         await guard.dispatch(kind="sms", key=f"em{em.id}:safe", recipient=to, session_id=session_id,
-                             payload={"body": "Awaaz: the person who sent you the emergency alert has marked themselves SAFE. Location tracking has stopped."},
-                             agent="tracking_updater", node="twilio_agent")
+                             payload={"body": safe_text}, agent="tracking_updater", node="twilio_agent")
+    if discord_url := await get_contact_discord(session_id):
+        await send_discord(session_id, f"em{em.id}:safe", discord_url, safe_text, agent="tracking_updater", node="twilio_agent")
     await set_phase(session_id, "safe")
     await bus.publish(session_id, "status", node="twilio_agent", data={"message": "Marked safe. Tracking stopped.", "safe": True})
     return {"ok": True}

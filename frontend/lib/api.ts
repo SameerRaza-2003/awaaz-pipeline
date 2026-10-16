@@ -35,7 +35,7 @@ export type SessionInfo = {
   phase: string;
   country: string;
   locale: string;
-  trusted_contact: { name: string; phone: string } | null;
+  trusted_contact: { name: string; phone: string | null; has_discord?: boolean } | null;
   transcript: { role: "user" | "assistant"; text: string }[];
   drafts: Drafts | null;
   receipt: Receipt | null;

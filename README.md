@@ -2,7 +2,7 @@
 
 Awaaz ("voice") is a chat tool for survivors of harassment. It opens with one question: **"Are you in danger right now?"**
 
-- **Yes:** the survivor's live location goes to her trusted contact by SMS, with a Google Maps link, and the contact gets a phone call. Updated locations keep going out until she presses **I'm safe**.
+- **Yes:** the survivor's live location goes to her trusted contact by SMS and/or Discord, with a Google Maps link and street address, and the contact gets a phone call. Updated locations keep going out until she presses **I'm safe**.
 - **No:** she can report a case. A gentle interview, in Urdu, Roman Urdu or English, produces two texts:
   - a **police description** with every detail, submitted to a separate police dashboard;
   - a **public description** with no personal information, emailed to activist communities picked by embedding similarity.
@@ -80,10 +80,21 @@ Turn on 2-step verification for the sending account, create an **app password** 
 and set `SMTP_USER` and `SMTP_APP_PASSWORD`. Gmail's sending limits apply. For the demo, set `SEED_EMAIL_BASE` to the same
 address and run `make demo-reset` so community and news emails land in your own inbox via plus-addressing.
 
-### Google Maps
+### Discord (free alerts)
 
-The browser provides the coordinates. `GOOGLE_MAPS_API_KEY` (Geocoding API) adds a street address to the alert;
-without it the alert has coordinates and a Maps link only. `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (Maps Embed API) is optional for the map on the home page.
+The trusted contact makes a private Discord channel, turns its notifications on, and creates a webhook
+(Edit channel → Integrations → Webhooks → New webhook → Copy URL). The survivor pastes that URL in **Setup** and can send
+a test message from there. Alerts, location updates and "I'm safe" are then posted automatically.
+The webhook URL contains a secret token: it is stored encrypted and only `discord:<webhook id>` ever appears in logs or the UI.
+To post for real in sandbox mode, add `discord:*` (or `discord:<webhook id>`) to `OUTBOUND_ALLOWLIST`.
+
+### Addresses and maps
+
+The browser provides the coordinates. Street addresses come from **OpenStreetMap Nominatim** by default (`GEOCODER=nominatim`):
+free, no key, limited to one request per second, which Awaaz respects. Put your email in `NOMINATIM_EMAIL` as their usage policy asks.
+`GEOCODER=google` with `GOOGLE_MAPS_API_KEY` uses Google instead (needs billing enabled); each provider is the other's fallback,
+and if both fail the alert still goes out with coordinates and a Maps link. The Maps link and the map on the home page need no key;
+`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (Maps Embed API) is optional.
 
 ## Tests
 
