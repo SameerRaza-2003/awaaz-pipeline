@@ -175,3 +175,7 @@ async def test_tracking_throttle_and_safe(monkeypatch):
 def test_mask_phone():
     assert mask_phone("+92 300 1234567") == "+92 3** *** *567"
     assert mask_phone("+923001234567") == "+92 3** *** *567"
+
+
+def test_discord_id_is_not_masked_as_phone():
+    assert mask_phone("discord:1560736918616936665") == "discord:1560736918616936665"

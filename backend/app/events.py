@@ -37,7 +37,7 @@ SENSITIVE_KEYS = {
     "known_entities",
 }
 
-PHONE_RE = re.compile(r"(?<![\w/])\+?\d[\d\s\-()]{7,}\d(?![\w/])")
+PHONE_RE = re.compile(r"(?<![\w/:])\+?\d[\d\s\-()]{7,}\d(?![\w/])")
 EMAIL_RE = re.compile(r"([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\.[A-Za-z]{2,})")
 
 
