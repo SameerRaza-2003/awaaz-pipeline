@@ -50,7 +50,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
   const [input, setInput] = useState("");
   const [local, setLocal] = useState<Msg[]>([]);
   const [dangerPrompt, setDangerPrompt] = useState(false);
-  const [locDenied, setLocDenied] = useState<{ seconds: number } | null>(null);
+  const [locDenied, setLocDenied] = useState<{ seconds: number; reason: string } | null>(null);
   const [locText, setLocText] = useState("");
   const [policeText, setPoliceText] = useState("");
   const [revise, setRevise] = useState<{ target: "public" | "police"; text: string } | null>(null);
@@ -143,17 +143,31 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
     await refresh();
   };
 
+  // GPS first; if there is no fix (e.g. indoors), fall back to Wi-Fi/cell location before giving up.
+  const getPosition = async (): Promise<{ pos: GeolocationPosition | null; reason: string }> => {
+    if (typeof window !== "undefined" && !window.isSecureContext)
+      return { pos: null, reason: "This page was opened over http://, and phones only share location with secure (https://) pages." };
+    if (!navigator.geolocation) return { pos: null, reason: "This browser does not support location." };
+    const attempt = (high: boolean, timeout: number) =>
+      new Promise<GeolocationPosition | GeolocationPositionError>((resolve) =>
+        navigator.geolocation.getCurrentPosition(resolve, resolve, { enableHighAccuracy: high, timeout, maximumAge: 60000 }),
+      );
+    let r = await attempt(true, 7000);
+    if (!("coords" in r) && r.code !== r.PERMISSION_DENIED) r = await attempt(false, 6000);
+    if ("coords" in r) return { pos: r, reason: "" };
+    if (r.code === r.PERMISSION_DENIED)
+      return { pos: null, reason: "Location permission is off for this site. Allow it in your browser's site settings for next time." };
+    return { pos: null, reason: "Your phone could not get a location fix (no GPS signal or location services are off)." };
+  };
+
   const onDangerYes = () =>
     run(async () => {
       setDangerPrompt(false);
-      const pos = await new Promise<GeolocationPosition | null>((resolve) => {
-        if (!navigator.geolocation) return resolve(null);
-        navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 });
-      });
+      const { pos, reason } = await getPosition();
       if (pos) {
         await sendDanger({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
       } else {
-        setLocDenied({ seconds: 10 });
+        setLocDenied({ seconds: 10, reason });
       }
     });
 
@@ -165,7 +179,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
       run(() => sendDanger(undefined, locText));
       return;
     }
-    const t = setTimeout(() => setLocDenied((l) => (l ? { seconds: l.seconds - 1 } : l)), 1000);
+    const t = setTimeout(() => setLocDenied((l) => (l ? { ...l, seconds: l.seconds - 1 } : l)), 1000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locDenied]);
@@ -298,9 +312,10 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
         {locDenied && (
           <div className="card space-y-2 border-warn p-3">
             <p className="font-semibold">We couldn&apos;t get your location.</p>
+            {locDenied.reason && <p className="text-xs text-muted">{locDenied.reason}</p>}
             <p className="text-sm text-ink-2">Type where you are (optional). The alert goes out in {locDenied.seconds}s either way.</p>
             <input className="field" dir="auto" placeholder="e.g. near Liberty Market, Gulberg" value={locText} onChange={(e) => setLocText(e.target.value)} />
-            <button className="btn btn-danger w-full" onClick={() => setLocDenied({ seconds: 0 })}>
+            <button className="btn btn-danger w-full" onClick={() => setLocDenied((l) => (l ? { ...l, seconds: 0 } : l))}>
               Send alert now
             </button>
           </div>
