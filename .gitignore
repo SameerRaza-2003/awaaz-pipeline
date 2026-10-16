@@ -9,3 +9,7 @@ node_modules/
 .next/
 *.log
 .ruff_cache/
+
+# local tooling notes
+frontend/AGENTS.md
+frontend/CLAUDE.md
