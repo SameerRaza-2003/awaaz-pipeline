@@ -115,10 +115,12 @@ class MacroDroidCaller:
     The macro is triggered by its webhook URL; `to` and `text` are passed along for macros that use them."""
 
     def place_call(self, to: str, say_text: str) -> str:
-        url = get_settings().macrodroid_call_url.strip()
+        url = get_settings().macrodroid_call_endpoint
         if not url:
-            raise RuntimeError("MacroDroid is not configured (MACRODROID_CALL_URL)")
+            raise RuntimeError("MacroDroid is not configured (MACRODROID_URL + MACRODROID_CALL_ID)")
         r = httpx.get(url, params={"to": to, "text": say_text[:300]}, timeout=15)
+        if r.status_code == 404:
+            raise RuntimeError("MacroDroid trigger not found: check MACRODROID_CALL_ID matches the macro's webhook identifier")
         r.raise_for_status()
         return f"macrodroid-{uuid.uuid4().hex[:8]}"
 

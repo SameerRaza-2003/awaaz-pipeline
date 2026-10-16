@@ -104,11 +104,14 @@ async def test_default_discord_webhook_from_env(monkeypatch):
 async def test_macrodroid_call(monkeypatch):
     monkeypatch.setenv("OUTBOUND_MODE", "live")
     monkeypatch.setenv("CALL_PROVIDER", "macrodroid")
-    monkeypatch.setenv("MACRODROID_CALL_URL", "https://trigger.macrodroid.com/dev123/awaaz_call")
+    monkeypatch.setenv("MACRODROID_URL", "https://trigger.macrodroid.com/dev123/")
+    monkeypatch.setenv("MACRODROID_CALL_URL", "")
     get_settings.cache_clear()
     hits = []
 
     class Resp:
+        status_code = 200
+
         def raise_for_status(self):
             pass
 

@@ -92,8 +92,9 @@ Two options, and they work together:
 - **One tap from her own phone.** After an alert, the emergency screen shows **Call now** and **Text location** buttons for the
   trusted contact (her saved contact, or `DEFAULT_TRUSTED_CONTACT`). They use her own SIM, so they cost nothing.
 - **Automatic call from a spare Android phone.** Install **MacroDroid** on an Android phone with a SIM and create a macro:
-  trigger **Webhook (URL)** (copy the URL it shows), action **Make call** to the trusted contact's number. Then set
-  `CALL_PROVIDER=macrodroid` and `MACRODROID_CALL_URL=<that URL>`. Awaaz calls the URL (with `to` and `text` parameters, for
+  trigger **Webhook (URL)** with identifier `awaaz_call`, action **Make call** to the trusted contact (save them as a contact on
+  that phone first if MacroDroid only offers a contact picker). Then set `CALL_PROVIDER=macrodroid`,
+  `MACRODROID_URL=https://trigger.macrodroid.com/<device-id>/` and `MACRODROID_CALL_ID=awaaz_call`. Awaaz calls the URL (with `to` and `text` parameters, for
   macros that want them) and the phone rings the contact. There is no spoken message; the location goes by Discord or SMS.
   In sandbox mode the contact's number must be in `OUTBOUND_ALLOWLIST`.
 

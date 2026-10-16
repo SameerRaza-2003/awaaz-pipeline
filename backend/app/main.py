@@ -61,6 +61,7 @@ def create_app(with_lifespan: bool = True) -> FastAPI:
         return {
             "ok": True,
             "outbound_mode": s.outbound_mode,
+            "call_provider": s.call_provider,
             "alert_authorities": s.alert_authorities,
             "llm_configured": bool(s.openrouter_api_key),
             "model_default": s.model_default,
