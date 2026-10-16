@@ -799,6 +799,12 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
                     </ul>
                   )}
                 </div>
+                {receipt.authority && (
+                  <div className="px-4 py-3 text-sm">
+                    <div className="label mb-1">Authority</div>
+                    The social-media-post version was {receipt.authority.status === "sent" ? "emailed to" : receipt.authority.status === "dry_run" ? "prepared for (dry run)" : "queued for"} the relevant authority.
+                  </div>
+                )}
                 {(dueAt || escalationOutcome || cancelled) && (
                   <div className="px-4 py-3 text-sm">
                     <div className="label mb-1">News outlets</div>

@@ -49,6 +49,7 @@ export type Receipt = {
   submitted_at?: string;
   escalation_due_at?: string | null;
   communities?: { name: string; score: number; reason: string; status: string }[];
+  authority?: { name: string; status: string } | null;
   no_match?: boolean;
   public_on_hold?: boolean;
 };
