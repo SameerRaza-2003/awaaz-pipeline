@@ -1,0 +1,11 @@
+PLAN.md
+docs/IMPLEMENTATION_PLAN.md
+.env
+*.db
+__pycache__/
+.venv/
+.pytest_cache/
+node_modules/
+.next/
+*.log
+.ruff_cache/

@@ -1,0 +1,33 @@
+[project]
+name = "awaaz-backend"
+version = "0.1.0"
+description = "Awaaz backend"
+requires-python = ">=3.12"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "cryptography>=50.0.2",
+    "fastapi>=0.143.3",
+    "httpx>=0.28.1",
+    "langchain>=1.4.6",
+    "langchain-core>=1.6.11",
+    "langchain-openai>=1.7.2",
+    "numpy>=2.5.4",
+    "pydantic>=2.14.1",
+    "pydantic-settings>=2.16.0",
+    "rapidfuzz>=3.14.6",
+    "sqlalchemy[asyncio]>=2.1.4",
+    "sse-starlette>=3.5.0",
+    "twilio>=9.12.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
