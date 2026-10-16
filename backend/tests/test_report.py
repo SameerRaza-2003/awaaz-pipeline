@@ -62,6 +62,10 @@ async def test_full_report_flow(monkeypatch):
         job = await db.scalar(select(EscalationJob).where(EscalationJob.public_ref == ref))
     assert emails and all(e.status == "dry_run" for e in emails)
     assert job and job.state == "pending"
+    async with SessionLocal() as db:
+        authority = (await db.scalars(select(DispatchLog).where(DispatchLog.kind == "authority_email"))).all()
+    assert len(authority) == 1 and authority[0].status == "dry_run"
+    assert authority[0].recipient == get_settings().authority_recipient
 
     hist = await bus.history(sid)
     matched = next(e for e in hist if e["kind"] == "status" and "selected" in e["data"])
@@ -85,8 +89,10 @@ async def test_matching_threshold_none_pass(monkeypatch):
     await drain()
     async with SessionLocal() as db:
         emails = (await db.scalars(select(DispatchLog).where(DispatchLog.kind == "community_email"))).all()
+        authority = (await db.scalars(select(DispatchLog).where(DispatchLog.kind == "authority_email"))).all()
         pr = await db.get(PublicReport, res["public_ref"])
     assert emails == [] and pr.police_ref  # police flow still continues
+    assert len(authority) == 1  # the authority still gets the post version
     hist = await bus.history(sid)
     assert any(e["data"].get("message") == "No community matched" for e in hist)
 
