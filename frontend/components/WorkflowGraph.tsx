@@ -8,16 +8,16 @@ import { EDGES, NODES, NodeState, fmtCountdown } from "@/lib/workflow";
 const POS: Record<string, { x: number; y: number }> = {
   danger_gate: { x: 300, y: 0 },
   location_agent: { x: 20, y: 120 },
-  twilio_agent: { x: 20, y: 240 },
+  twilio_agent: { x: 20, y: 250 },
   intake_agent: { x: 470, y: 120 },
-  drafting_agent: { x: 470, y: 240 },
-  user_review: { x: 470, y: 360 },
-  police_dispatch_agent: { x: 300, y: 490 },
-  escalation_timer: { x: 300, y: 610 },
-  police_status_agent: { x: 300, y: 730 },
-  gmail_news: { x: 300, y: 850 },
-  matching_agent: { x: 620, y: 490 },
-  gmail_communities: { x: 620, y: 610 },
+  drafting_agent: { x: 470, y: 250 },
+  user_review: { x: 470, y: 380 },
+  police_dispatch_agent: { x: 300, y: 500 },
+  escalation_timer: { x: 300, y: 630 },
+  police_status_agent: { x: 300, y: 760 },
+  gmail_news: { x: 300, y: 890 },
+  matching_agent: { x: 620, y: 500 },
+  gmail_communities: { x: 620, y: 630 },
 };
 
 const STYLE: Record<string, string> = {
@@ -44,7 +44,7 @@ const FlowNode = memo(function FlowNode({ data }: NodeProps<Node<Data>>) {
   const { state, label, kind, now } = data;
   const cd = kind === "timer" && state.dueAt && state.status === "waiting" ? fmtCountdown(state.dueAt, now) : null;
   return (
-    <div className={`w-[190px] rounded-xl border-2 px-3 py-2 shadow-sm ${STYLE[state.status]}`} title={state.message || ""}>
+    <div className={`h-[80px] w-[190px] overflow-hidden rounded-xl border-2 px-3 py-2 shadow-sm ${STYLE[state.status]}`} title={state.message || ""}>
       <Handle type="target" position={Position.Top} className="!bg-line !border-0" />
       <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted">
         <span>{kind === "agent" ? "agent" : kind === "human" ? "you" : kind === "timer" ? "timer" : "start"}</span>
@@ -59,6 +59,8 @@ const FlowNode = memo(function FlowNode({ data }: NodeProps<Node<Data>>) {
 });
 
 const nodeTypes = { awaaz: FlowNode };
+const NODE_W = 190;
+const NODE_H = 80;
 
 export function WorkflowGraph({ states, onSelect }: { states: Record<string, NodeState>; onSelect?: (id: string) => void }) {
   const [now, setNow] = useState(() => Date.now());
@@ -74,6 +76,9 @@ export function WorkflowGraph({ states, onSelect }: { states: Record<string, Nod
         type: "awaaz",
         position: POS[n.id],
         data: { label: n.label, kind: n.kind, state: states[n.id], now },
+        // Fixed size: nodes are rebuilt every render, so React Flow must not depend on DOM measurement.
+        width: NODE_W,
+        height: NODE_H,
         draggable: false,
       })),
     [states, now],
