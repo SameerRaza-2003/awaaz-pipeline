@@ -39,7 +39,7 @@ export function Nav() {
         </div>
       )}
       <nav className="mx-auto max-w-[1500px] flex items-center gap-2 px-4 h-14">
-        <Link href="/" className="font-bold text-lg tracking-tight text-accent mr-4">
+        <Link href="/" className="font-bold text-lg tracking-tight text-accent mr-1 sm:mr-4">
           Awaaz <span className="font-normal text-muted text-sm hidden sm:inline">آواز</span>
         </Link>
         {LINKS.map((l) => (
@@ -51,8 +51,8 @@ export function Nav() {
             {l.label}
           </Link>
         ))}
-        <button onClick={quickExit} className="ml-auto btn btn-ghost !min-h-9 !py-1.5 text-sm" title="Leave this site immediately">
-          Quick exit ✕
+        <button onClick={quickExit} className="ml-auto btn btn-ghost !min-h-9 !py-1.5 text-sm whitespace-nowrap" title="Leave this site immediately">
+          <span className="hidden sm:inline">Quick exit</span><span className="sm:hidden">Exit</span> ✕
         </button>
       </nav>
     </header>

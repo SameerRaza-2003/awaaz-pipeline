@@ -25,7 +25,7 @@ SLOTS = REQUIRED + OPTIONAL
 MAX_TURNS = 8
 
 TYPE_SYNONYMS = {
-    "work": "workplace", "office": "workplace", "job": "workplace",
+    "work": "workplace", "office": "workplace", "job": "workplace", "manager": "workplace", "boss": "workplace", "colleague": "workplace",
     "street": "street/public", "public": "street/public", "market": "street/public",
     "cyber": "online", "internet": "online", "social media": "online",
     "university": "campus", "school": "campus", "college": "campus",
@@ -172,3 +172,55 @@ DANGER_WORDS = (
 def looks_like_danger(text: str) -> bool:
     t = text.lower()
     return any(w in t for w in DANGER_WORDS)
+
+
+# Deterministic interview used when the LLM is unavailable (fail open: the complaint must still be possible).
+FALLBACK_QUESTIONS: list[tuple[str, dict[str, str]]] = [
+    ("date_time", {"en": "Thank you for telling me. When did this happen? An approximate date is fine.",
+                   "ur": "بتانے کا شکریہ۔ یہ کب ہوا؟ اندازاً تاریخ بھی کافی ہے۔"}),
+    ("city_area", {"en": "Which city or area did it happen in?", "ur": "یہ کس شہر یا علاقے میں ہوا؟"}),
+    ("accused", {"en": "Who did this? Their role or relationship to you, and their name if you know it.",
+                 "ur": "یہ کس نے کیا؟ ان کا عہدہ یا آپ سے رشتہ، اور اگر معلوم ہو تو نام۔"}),
+    ("witnesses", {"en": "Did anyone else see or hear what happened?", "ur": "کیا کسی اور نے یہ دیکھا یا سنا؟"}),
+    ("evidence_available", {"en": "Do you have anything like messages, photos or recordings?",
+                            "ur": "کیا آپ کے پاس پیغامات، تصاویر یا ریکارڈنگ جیسا کچھ ہے؟"}),
+    ("prior_reports", {"en": "Have you reported this to anyone before, like HR, the institution or the police?",
+                       "ur": "کیا آپ نے پہلے کسی کو اس کی شکایت کی ہے، جیسے ادارہ یا پولیس؟"}),
+    ("complainant_name", {"en": "For the police version only (never public): what name should go on the complaint? You can say skip.",
+                          "ur": "صرف پولیس کے لیے (کبھی عوامی نہیں): شکایت پر کون سا نام ہو؟ آپ چھوڑ سکتی ہیں۔"}),
+    ("complainant_contact", {"en": "For the police only: a phone number or email where they can reach you?",
+                             "ur": "صرف پولیس کے لیے: کوئی فون نمبر یا ای میل جس پر وہ رابطہ کر سکیں؟"}),
+    ("complainant_address", {"en": "For the police only: your address? You can skip.",
+                             "ur": "صرف پولیس کے لیے: آپ کا پتہ؟ آپ چھوڑ سکتی ہیں۔"}),
+]
+SKIP_WORDS = {"skip", "no", "none", "pass", "pata nahi", "nahi", "n/a", "na", "-", "نہیں", "چھوڑیں"}
+
+
+def fallback_turn(state: dict[str, Any], text: str, locale: str = "en") -> str | None:
+    """Store the answer to the previous fixed question and return the next one (None when done)."""
+    slots = state.setdefault("slots", {})
+    idx = state.get("fallback_q")
+    answer = text.strip()
+    skipped = answer.lower().strip(" .!") in SKIP_WORDS
+    if idx is None:
+        # First message answers the greeting ("what happened?").
+        if not slots.get("incident_summary"):
+            slots["incident_summary"] = answer
+        else:
+            slots["incident_summary"] = f"{slots['incident_summary']}\n{answer}"
+        nxt = 0
+    else:
+        slot = FALLBACK_QUESTIONS[idx][0]
+        if not skipped and not slots.get(slot):
+            slots[slot] = answer
+        nxt = idx + 1
+    if not slots.get("harassment_type") or slots.get("harassment_type") == "other":
+        slots["harassment_type"] = normalize_type(" ".join(str(slots.get(k, "")) for k in ("incident_summary", "accused", "city_area")))
+    while nxt < len(FALLBACK_QUESTIONS) and slots.get(FALLBACK_QUESTIONS[nxt][0]):
+        nxt += 1
+    if nxt >= len(FALLBACK_QUESTIONS):
+        state["fallback_q"] = None
+        return None
+    state["fallback_q"] = nxt
+    q = FALLBACK_QUESTIONS[nxt][1]
+    return q.get(locale, q["en"])

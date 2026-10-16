@@ -148,3 +148,25 @@ async def test_intake_danger_detection(monkeypatch):
     s.add("intake_agent", tool_call("signal_danger", reason="he is outside"), final_text := __import__("langchain_core.messages", fromlist=["AIMessage"]).AIMessage(content="Please press the emergency button."))
     r = await report.message(sid, "he is here outside my door, bachao")
     assert r["danger_suspected"] is True
+
+
+async def test_intake_without_llm_uses_fixed_questions():
+    # no scripts installed for intake: every agent call fails, the fixed interview takes over
+    Scripts().install()
+    sid = (await sessions.create_session()).id
+    await report.start(sid, True)
+    answers = ["My boss touched me at the office", "May 2026", "Karachi", "my manager Imran Qureshi", "skip",
+               "messages", "no", "Sana Malik", "+923331112222", "skip"]
+    r = None
+    for a in answers:
+        r = await report.message(sid, a)
+        if r["finalized"]:
+            break
+    assert r["finalized"]
+    await drain()
+    state = await sessions.load_state(sid)
+    rec = state["record"]
+    assert rec["harassment_type"] == "workplace" and rec["city_area"] == "Karachi"
+    assert rec["complainant_name"] == "Sana Malik" and "Imran" in rec["accused"]
+    assert "Imran Qureshi" in state["drafts"]["police_text"] and "Sana Malik" in state["drafts"]["police_text"]
+    assert state["drafts"]["public_clean"] is False  # no drafting LLM: publication fails closed

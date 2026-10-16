@@ -39,6 +39,8 @@ NAME_STOPWORDS = {
     "mr", "mrs", "ms", "miss", "sir", "madam", "dr", "prof", "sahab", "sahib", "bibi", "begum", "syed",
     "muhammad", "mohammad", "the", "and", "my", "his", "her", "manager", "boss", "teacher", "colleague",
     "neighbour", "neighbor", "cousin", "uncle", "friend", "driver", "unknown", "man", "woman", "person",
+    "he", "she", "they", "their", "its", "this", "that", "there", "then", "when", "we", "our", "it", "in", "at",
+    "on", "name", "is", "was", "line", "senior", "junior", "head", "staff", "student", "yes", "not", "know",
 }
 
 GENERIC_PLACE_WORDS = {

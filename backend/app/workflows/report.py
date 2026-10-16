@@ -11,7 +11,7 @@ from sqlalchemy import select
 
 from app.agents.drafting import drafting_agent
 from app.agents.gmail import gmail_agent, template_email
-from app.agents.intake import MAX_TURNS, build_record, intake_agent, looks_like_danger
+from app.agents.intake import MAX_TURNS, build_record, fallback_turn, intake_agent, looks_like_danger
 from app.agents.matching import matching_agent
 from app.agents.police_agents import police_dispatch_agent, submit_complaint
 from app.agents.runner import AgentFailed, runner, wrap_data
@@ -111,14 +111,21 @@ async def message(session_id: str, text: str) -> dict[str, Any]:
             note = "turn limit reached: call finalize_intake now with what exists, then tell her drafts are being prepared."
         reply = None
         try:
+            if state.get("fallback_q") is not None:
+                raise AgentFailed("deterministic interview already in progress")
             res = await runner.run(intake_agent, session_id=session_id, messages=_history(state["transcript"], note), state=state)
             for m in reversed(res.messages):
                 if isinstance(m, AIMessage) and not m.tool_calls and m.content:
                     reply = m.content if isinstance(m.content, str) else str(m.content)
                     break
         except AgentFailed:
-            pass
-        if not state.get("final") and state["turns"] >= MAX_TURNS + 2:
+            if not state.get("final"):
+                reply = fallback_turn(state, text, sess.locale)
+                if reply is None:
+                    state["record"] = build_record(state.get("slots", {}), state.get("default_country", "PK")).model_dump()
+                    state["final"] = True
+                await bus.publish(session_id, "step", node="intake_agent", data={"fallback": True, "message": "Intake Agent unavailable; asking fixed questions"})
+        if not state.get("final") and state["turns"] >= MAX_TURNS + 2 and state.get("fallback_q") is None:
             # Deterministic stop: move on with what exists.
             state["record"] = build_record(state.get("slots", {}), state.get("default_country", "PK")).model_dump()
             state["final"] = True

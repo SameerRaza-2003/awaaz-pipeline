@@ -48,12 +48,12 @@ export default function Home() {
       <section className="card flex min-h-[70vh] flex-col overflow-hidden lg:h-[calc(100vh-8rem)]" aria-label="Chat">
         <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
           <h1 className="font-semibold">Awaaz</h1>
-          <span className="text-xs text-muted">private · anonymous session</span>
+          <span className="hidden text-xs text-muted sm:inline">private · anonymous session</span>
           <button className="ml-auto btn btn-ghost !min-h-9 !py-1 text-sm" onClick={() => setSetup(true)} disabled={!sessionId}>
             ⚙ Setup
           </button>
           <button className="btn btn-ghost !min-h-9 !py-1 text-sm lg:hidden" onClick={() => setShowLive((v) => !v)}>
-            {showLive ? "Hide" : "Live"} workflow
+            {showLive ? "Hide" : "Live"}
           </button>
         </div>
         {err && <p className="m-3 rounded-lg bg-danger-soft p-2 text-sm text-danger">{err}</p>}
