@@ -125,6 +125,24 @@ class MacroDroidCaller:
         return f"macrodroid-{uuid.uuid4().hex[:8]}"
 
 
+def macrodroid_sms(to: str, body: str) -> str:
+    """Free SMS from the spare phone's SIM: a MacroDroid macro sends [lv=text] to [lv=to]."""
+    url = get_settings().macrodroid_sms_endpoint
+    if not url:
+        raise RuntimeError("MacroDroid SMS is not configured (MACRODROID_URL + MACRODROID_SMS_ID)")
+    r = httpx.get(url, params={"to": to, "text": body[:600]}, timeout=15)
+    if r.status_code == 404:
+        raise RuntimeError("MacroDroid SMS trigger not found: check MACRODROID_SMS_ID matches the macro's webhook identifier")
+    r.raise_for_status()
+    return f"macrodroid-{uuid.uuid4().hex[:8]}"
+
+
+def send_sms(to: str, body: str) -> str:
+    if get_settings().sms_provider == "macrodroid":
+        return macrodroid_sms(to, body)
+    return sms_provider_factory().send_sms(to, body)
+
+
 def place_call(to: str, say_text: str) -> str:
     if get_settings().call_provider == "macrodroid":
         return MacroDroidCaller().place_call(to, say_text)
@@ -170,6 +188,10 @@ def call_provider_factory():
     return place_call
 
 
+def sms_sender_factory():
+    return send_sms
+
+
 def twiml_say(text: str) -> str:
     safe = escape(text)
     say = f'<Say voice="alice"><prosody rate="slow">{safe}</prosody></Say>'
@@ -179,6 +201,8 @@ def twiml_say(text: str) -> str:
 def provider_configured(kind: str) -> bool:
     s = get_settings()
     if kind == "sms":
+        if s.sms_provider == "macrodroid":
+            return bool(s.macrodroid_sms_endpoint)
         return bool(s.twilio_account_sid and s.twilio_auth_token and s.twilio_from_number)
     if kind == "call":
         if s.call_provider == "macrodroid":
@@ -282,7 +306,7 @@ class OutboundGuard:
         for attempt in range(MAX_SEND_ATTEMPTS):
             try:
                 if kind == "sms":
-                    sid = await asyncio.to_thread(sms_provider_factory().send_sms, to, payload["body"])
+                    sid = await asyncio.to_thread(sms_sender_factory(), to, payload["body"])
                 elif kind == "call":
                     sid = await asyncio.to_thread(call_provider_factory(), to, payload["say_text"])
                 elif kind == "discord":

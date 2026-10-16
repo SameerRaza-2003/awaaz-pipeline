@@ -30,6 +30,7 @@ async def fresh_env(tmp_path, monkeypatch):
     monkeypatch.setattr(outbound, "email_sender_factory", _no_network)
     monkeypatch.setattr(outbound, "discord_sender_factory", _no_network)
     monkeypatch.setattr(outbound, "call_provider_factory", _no_network)
+    monkeypatch.setattr(outbound, "sms_sender_factory", _no_network)
 
     from app.tools import maps
 

@@ -99,6 +99,12 @@ Two options, and they work together:
   macros that want them) and the phone rings the contact. There is no spoken message; the location goes by Discord or SMS.
   In sandbox mode the contact's number must be in `OUTBOUND_ALLOWLIST`.
 
+### SMS without Twilio (free)
+
+On the same spare phone, add a second MacroDroid macro: trigger **Webhook (URL)** with identifier `awaaz sms`, local string
+variables `to` and `text`, action **Send SMS** to `[lv=to]` with message `[lv=text]`. Then set `SMS_PROVIDER=macrodroid` and
+`MACRODROID_SMS_ID="awaaz sms"`. The alert, every location update and the "safe" message then go out as real SMS from that SIM.
+
 ### Discord (free alerts)
 
 The trusted contact makes a private Discord channel, turns its notifications on, and creates a webhook

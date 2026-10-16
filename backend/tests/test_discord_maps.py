@@ -122,3 +122,25 @@ async def test_macrodroid_call(monkeypatch):
                                         payload={"say_text": "Awaaz alert, please check your messages."})
     assert res.status == "sent" and res.provider_id.startswith("macrodroid-")
     assert hits[0][0].endswith("/awaaz_call") and hits[0][1]["to"] == "+923001234567"
+
+
+async def test_macrodroid_sms(monkeypatch):
+    monkeypatch.setenv("OUTBOUND_MODE", "live")
+    monkeypatch.setenv("SMS_PROVIDER", "macrodroid")
+    monkeypatch.setenv("MACRODROID_URL", "https://trigger.macrodroid.com/dev123/")
+    monkeypatch.setenv("MACRODROID_SMS_ID", "awaaz sms")
+    get_settings.cache_clear()
+    hits = []
+
+    class Resp:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr(outbound, "sms_sender_factory", lambda: outbound.send_sms)
+    monkeypatch.setattr(outbound.httpx, "get", lambda url, params, timeout: hits.append((url, params)) or Resp())
+    res = await outbound.guard.dispatch(kind="sms", key="em1:alert", recipient="+923001234567", session_id="s",
+                                        payload={"body": "Help needed: https://www.google.com/maps?q=31.5,74.3"})
+    assert res.status == "sent"
+    assert hits[0][0].endswith("/awaaz sms") and hits[0][1] == {"to": "+923001234567", "text": "Help needed: https://www.google.com/maps?q=31.5,74.3"}

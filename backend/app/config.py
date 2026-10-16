@@ -35,11 +35,19 @@ class Settings(BaseSettings):
     privacy_llm_review: bool = True  # LLM identifier extraction + second-read review on top of the scanner
 
     call_provider: Literal["twilio", "macrodroid"] = "twilio"
+    sms_provider: Literal["twilio", "macrodroid"] = "twilio"
     # MacroDroid on a spare Android phone places the call. Either the device link + trigger identifier,
     # or the full trigger URL in macrodroid_call_url.
     macrodroid_url: str = ""  # https://trigger.macrodroid.com/<device-id>/
     macrodroid_call_id: str = "awaaz_call"
     macrodroid_call_url: str = ""
+    macrodroid_sms_id: str = "awaaz_sms"
+
+    @property
+    def macrodroid_sms_endpoint(self) -> str:
+        if self.macrodroid_url.strip() and self.macrodroid_sms_id.strip():
+            return self.macrodroid_url.strip().rstrip("/") + "/" + self.macrodroid_sms_id.strip().strip("/")
+        return ""
 
     @property
     def macrodroid_call_endpoint(self) -> str:

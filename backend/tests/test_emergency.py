@@ -132,6 +132,8 @@ async def test_sandbox_sends_to_allowlisted(monkeypatch):
             return "SM123"
 
     monkeypatch.setattr(outbound, "sms_provider_factory", lambda: FakeTwilio())
+    monkeypatch.setattr(outbound, "sms_sender_factory", lambda: outbound.send_sms)
+    monkeypatch.setenv("SMS_PROVIDER", "twilio")
     res = await outbound.guard.dispatch(kind="sms", key="k2", recipient=CONTACT, session_id="s", payload={"body": "hi there"})
     assert res.status == "sent" and res.provider_id == "SM123" and sent == [(CONTACT, "hi there")]
     again = await outbound.guard.dispatch(kind="sms", key="k2", recipient=CONTACT, session_id="s", payload={"body": "hi there"})
