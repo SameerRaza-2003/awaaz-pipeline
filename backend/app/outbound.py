@@ -110,6 +110,25 @@ class SmtpEmailSender:
         return msg["Message-ID"]
 
 
+class MacroDroidCaller:
+    """Free automatic calls: a spare Android phone running MacroDroid places the call from its own SIM.
+    The macro is triggered by its webhook URL; `to` and `text` are passed along for macros that use them."""
+
+    def place_call(self, to: str, say_text: str) -> str:
+        url = get_settings().macrodroid_call_url.strip()
+        if not url:
+            raise RuntimeError("MacroDroid is not configured (MACRODROID_CALL_URL)")
+        r = httpx.get(url, params={"to": to, "text": say_text[:300]}, timeout=15)
+        r.raise_for_status()
+        return f"macrodroid-{uuid.uuid4().hex[:8]}"
+
+
+def place_call(to: str, say_text: str) -> str:
+    if get_settings().call_provider == "macrodroid":
+        return MacroDroidCaller().place_call(to, say_text)
+    return sms_provider_factory().place_call(to, twiml_say(say_text))
+
+
 class DiscordSender:
     """Posts to a Discord channel webhook. Free, no account approval needed."""
 
@@ -143,6 +162,10 @@ def email_sender_factory() -> EmailSender:
 
 def discord_sender_factory() -> DiscordSender:
     return DiscordSender()
+
+
+def call_provider_factory():
+    return place_call
 
 
 def twiml_say(text: str) -> str:
@@ -243,7 +266,7 @@ class OutboundGuard:
                 if kind == "sms":
                     sid = await asyncio.to_thread(sms_provider_factory().send_sms, to, payload["body"])
                 elif kind == "call":
-                    sid = await asyncio.to_thread(sms_provider_factory().place_call, to, twiml_say(payload["say_text"]))
+                    sid = await asyncio.to_thread(call_provider_factory(), to, payload["say_text"])
                 elif kind == "discord":
                     sid = await asyncio.to_thread(discord_sender_factory().send, payload["webhook_url"], payload["body"])
                 else:

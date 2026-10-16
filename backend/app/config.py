@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     match_top_k: int = 5
     privacy_llm_review: bool = True  # LLM identifier extraction + second-read review on top of the scanner
 
+    call_provider: Literal["twilio", "macrodroid"] = "twilio"
+    macrodroid_call_url: str = ""  # MacroDroid "Webhook (URL)" trigger on a spare Android phone that places the call
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_from_number: str = ""

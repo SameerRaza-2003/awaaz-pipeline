@@ -17,7 +17,9 @@ async def fresh_env(tmp_path, monkeypatch):
     monkeypatch.setenv("OUTBOUND_MODE", "dry_run")
     monkeypatch.setenv("SCHEDULER_POLL_S", "0.2")
     monkeypatch.setenv("GEOCODER", "nominatim")
-    monkeypatch.setenv("PRIVACY_LLM_REVIEW", "false")  # enabled explicitly in test_privacy.py
+    monkeypatch.setenv("PRIVACY_LLM_REVIEW", "false")
+    monkeypatch.setenv("DEFAULT_DISCORD_WEBHOOK", "")
+    monkeypatch.setenv("DEFAULT_TRUSTED_CONTACT", "")  # enabled explicitly in test_privacy.py
     get_settings.cache_clear()
     crypto.reset()
 
@@ -27,6 +29,7 @@ async def fresh_env(tmp_path, monkeypatch):
     monkeypatch.setattr(outbound, "sms_provider_factory", _no_network)
     monkeypatch.setattr(outbound, "email_sender_factory", _no_network)
     monkeypatch.setattr(outbound, "discord_sender_factory", _no_network)
+    monkeypatch.setattr(outbound, "call_provider_factory", _no_network)
 
     from app.tools import maps
 

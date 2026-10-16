@@ -419,6 +419,11 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
     : emergency.location.location_available
       ? { state: "done", detail: emergency.location.address || `${emergency.location.lat?.toFixed(5)}, ${emergency.location.lng?.toFixed(5)}` }
       : { state: "failed", detail: "Unavailable: your contact was told" };
+  const contactPhone = session?.trusted_contact?.phone || null;
+  const contactName = session?.trusted_contact && !session.trusted_contact.is_default ? session.trusted_contact.name : "your contact";
+  const smsBody = emergency.location?.maps_link
+    ? `I need help. This is where I am: ${emergency.location.maps_link}`
+    : "I need help. Please call me now.";
   const channel = (d: any, label: string) =>
     !d && emergency.finished ? { state: "off" as RowState, detail: "Not set up" } : outboundDetail(d, label);
 
@@ -527,6 +532,19 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
                 <StatusRow icon={Phone} label="Phone call" {...channel(emergency.call, "Calling your contact")} />
                 <StatusRow icon={Globe2} label="Discord" {...channel(emergency.discord, "Posted to your contact's channel")} />
               </ul>
+              {phase === "emergency" && contactPhone && (
+                <div className="border-t border-line px-4 py-3">
+                  <p className="mb-2 text-xs text-muted">Reach {contactName} yourself, from your own phone:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <a className="btn btn-danger" href={`tel:${contactPhone}`}>
+                      <Phone size={16} aria-hidden /> Call now
+                    </a>
+                    <a className="btn btn-ghost" href={`sms:${contactPhone}?body=${encodeURIComponent(smsBody)}`}>
+                      <MessageSquare size={16} aria-hidden /> Text location
+                    </a>
+                  </div>
+                </div>
+              )}
               {emergency.location?.location_available && (
                 <div className="border-t border-line">
                   <iframe

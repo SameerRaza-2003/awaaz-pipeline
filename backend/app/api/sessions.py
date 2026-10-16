@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from app import sessions
 from app.api.sse import event_stream, parse_last_id
-from app.config import normalize_recipient
+from app.config import get_settings, normalize_recipient
 from app.events import bus
 from app.agents.emergency_agents import send_discord
 from app.outbound import discord_recipient, is_valid_recipient
@@ -58,6 +58,16 @@ async def create_session(body: CreateSession | None = None):
     return {"session_id": row.id, "country": row.country, "locale": row.locale}
 
 
+def trusted_contact_view(contact, discord) -> dict | None:
+    """The session's contact, or the operator's defaults from .env (so one-tap calling works in demos too)."""
+    if contact:
+        return {"name": contact[0], "phone": contact[1], "has_discord": bool(discord)}
+    default_phone = normalize_recipient(get_settings().default_trusted_contact) if get_settings().default_trusted_contact else None
+    if default_phone or discord:
+        return {"name": "your trusted contact", "phone": default_phone, "has_discord": bool(discord), "is_default": True}
+    return None
+
+
 @router.get("/{session_id}")
 async def get_session(session_id: str):
     row = await require_session(session_id)
@@ -69,7 +79,7 @@ async def get_session(session_id: str):
         "phase": row.phase,
         "country": row.country,
         "locale": row.locale,
-        "trusted_contact": {"name": contact[0], "phone": contact[1], "has_discord": bool(discord)} if contact else None,
+        "trusted_contact": trusted_contact_view(contact, discord),
         "transcript": state.get("transcript", []),
         "drafts": state.get("drafts"),
         "receipt": state.get("receipt"),

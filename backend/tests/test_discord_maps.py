@@ -99,3 +99,22 @@ async def test_default_discord_webhook_from_env(monkeypatch):
     await emergency.start(sid, {"lat": 33.68, "lng": 73.04}, None)
     await asyncio.gather(*list(emergency._tasks))
     assert [r.recipient for r in await _rows("discord")] == ["discord:123456789012345678"]
+
+
+async def test_macrodroid_call(monkeypatch):
+    monkeypatch.setenv("OUTBOUND_MODE", "live")
+    monkeypatch.setenv("CALL_PROVIDER", "macrodroid")
+    monkeypatch.setenv("MACRODROID_CALL_URL", "https://trigger.macrodroid.com/dev123/awaaz_call")
+    get_settings.cache_clear()
+    hits = []
+
+    class Resp:
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr(outbound, "call_provider_factory", lambda: outbound.place_call)
+    monkeypatch.setattr(outbound.httpx, "get", lambda url, params, timeout: hits.append((url, params)) or Resp())
+    res = await outbound.guard.dispatch(kind="call", key="em1:alert", recipient="+923001234567", session_id="s",
+                                        payload={"say_text": "Awaaz alert, please check your messages."})
+    assert res.status == "sent" and res.provider_id.startswith("macrodroid-")
+    assert hits[0][0].endswith("/awaaz_call") and hits[0][1]["to"] == "+923001234567"
