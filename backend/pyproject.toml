@@ -21,6 +21,9 @@ dependencies = [
     "uvicorn[standard]>=0.54.0",
 ]
 
+[project.optional-dependencies]
+local-embeddings = ["fastembed>=0.7"]
+
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",

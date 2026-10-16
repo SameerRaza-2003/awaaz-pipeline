@@ -41,15 +41,23 @@ async def score_communities(public_text: str, country: str) -> list[dict]:
                 "description": r.description,
                 "countries": r.countries,
                 "score": round(score, 4),
+                "provider": name,
             }
         )
     out.sort(key=lambda x: x["score"], reverse=True)
     return out
 
 
+def effective_threshold(scores: list[dict]) -> float:
+    s = get_settings()
+    hashed = bool(scores) and str(scores[0].get("provider", "")).startswith("hash")
+    return s.match_threshold_hash if hashed else s.match_threshold
+
+
 def select_recipients(scores: list[dict], threshold: float | None = None, top_k: int | None = None) -> list[dict]:
     s = get_settings()
-    threshold = s.match_threshold if threshold is None else threshold
+    if threshold is None:
+        threshold = effective_threshold(scores)
     top_k = s.match_top_k if top_k is None else top_k
     passing = [x for x in sorted(scores, key=lambda x: x["score"], reverse=True) if x["score"] >= threshold]
     return passing[:top_k]

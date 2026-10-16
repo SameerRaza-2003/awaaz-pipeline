@@ -336,7 +336,7 @@ async def community_branch(session_id: str, work: dict[str, Any]) -> dict[str, A
         "status",
         node="matching_agent",
         data={
-            "threshold": get_settings().match_threshold,
+            "threshold": similarity.effective_threshold(m_state.get("scores", [])),
             "scores": [{"name": c["name"], "score": c["score"]} for c in m_state.get("scores", [])],
             "selected": [{"name": c["name"], "score": c["score"], "reason": c["reason"]} for c in selected],
         },

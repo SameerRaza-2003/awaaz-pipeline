@@ -52,7 +52,7 @@ async def _select(ctx: RunContext, scores: list[ScoreItem] | None = None) -> dic
     chosen = similarity.select_recipients(ctx.state["scores"])  # computed scores only, never LLM-provided ones
     ctx.state["selected"] = chosen
     return {
-        "threshold": s.match_threshold,
+        "threshold": similarity.effective_threshold(ctx.state["scores"]),
         "top_k": s.match_top_k,
         "selected": [{"community_id": c["community_id"], "name": c["name"], "score": c["score"]} for c in chosen],
         "below_threshold": [

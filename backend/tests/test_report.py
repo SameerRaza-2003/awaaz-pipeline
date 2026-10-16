@@ -13,7 +13,7 @@ from .helpers import ACCUSED, NAME, PUBLIC_CLEAN, Scripts, awaaz_dump, drafting_
 
 
 async def _to_review(monkeypatch, scripts: Scripts):
-    monkeypatch.setenv("MATCH_THRESHOLD", "0.05")
+    monkeypatch.setenv("MATCH_THRESHOLD_HASH", "0.05")
     get_settings.cache_clear()
     await seed()
     sid = (await sessions.create_session()).id
@@ -79,7 +79,7 @@ async def test_full_report_flow(monkeypatch):
 async def test_matching_threshold_none_pass(monkeypatch):
     s = Scripts().install()
     sid = await _to_review(monkeypatch, s)
-    monkeypatch.setenv("MATCH_THRESHOLD", "0.99")
+    monkeypatch.setenv("MATCH_THRESHOLD_HASH", "0.99")
     get_settings.cache_clear()
     res = await report.confirm(sid, None, None)
     await drain()
@@ -93,7 +93,7 @@ async def test_matching_threshold_none_pass(monkeypatch):
 
 async def test_public_on_hold_when_pii_never_clears(monkeypatch):
     s = Scripts().install()
-    monkeypatch.setenv("MATCH_THRESHOLD", "0.05")
+    monkeypatch.setenv("MATCH_THRESHOLD_HASH", "0.05")
     get_settings.cache_clear()
     await seed()
     sid = (await sessions.create_session()).id

@@ -71,7 +71,21 @@ def translit(s: str) -> str:
     return "".join(ch for ch in s if not unicodedata.combining(ch))
 
 
+URDU_RE = re.compile(r"[\u0600-\u06FF]")
+
+
+def skeleton(latin: str) -> str:
+    """Consonant skeleton used to compare names across Urdu and Latin script."""
+    t = re.sub(r"[^a-z]", "", latin.lower())
+    for a, b in (("ph", "f"), ("q", "k"), ("w", "v")):
+        t = t.replace(a, b)
+    t = re.sub(r"[aeiouhy]", "", t)
+    return re.sub(r"(.)\1+", r"\1", t)
+
+
 def norm_token(tok: str) -> str:
+    if URDU_RE.search(tok):
+        return "~" + skeleton(translit(tok))
     t = translit(tok).lower()
     t = re.sub(r"[^a-z]", "", t)
     for a, b in (("ph", "f"), ("q", "k"), ("w", "v"), ("ee", "i"), ("oo", "u"), ("ay", "e"), ("ai", "e"), ("ei", "e"), ("y", "i")):
@@ -107,6 +121,12 @@ def _looks_like_phone(s: str) -> bool:
 def _token_match(a: str, b: str) -> bool:
     if not a or not b:
         return False
+    if a.startswith("~") or b.startswith("~"):
+        sa = a[1:] if a.startswith("~") else skeleton(a)
+        sb = b[1:] if b.startswith("~") else skeleton(b)
+        if len(sa) < 2 or len(sb) < 2:
+            return False
+        return sa == sb if min(len(sa), len(sb)) <= 3 else fuzz.ratio(sa, sb) >= 85
     if len(b) <= 3 or len(a) <= 3:
         return a == b
     threshold = 85 if min(len(a), len(b)) <= 4 else 80

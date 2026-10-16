@@ -13,3 +13,5 @@ node_modules/
 # local tooling notes
 frontend/AGENTS.md
 frontend/CLAUDE.md
+evals/results/
+backend/data/

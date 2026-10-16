@@ -23,11 +23,12 @@ class Settings(BaseSettings):
 
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    model_default: str = "google/gemini-2.5-flash"
+    model_default: str = "deepseek/deepseek-v4-flash"
     model_drafting: str = ""
     embedding_provider: Literal["openrouter", "fastembed", "hash"] = "openrouter"
-    embedding_model: str = "openai/text-embedding-3-small"
+    embedding_model: str = "baai/bge-m3"
     match_threshold: float = 0.45
+    match_threshold_hash: float = 0.2  # the offline hashing embedder scores lower
     match_top_k: int = 5
 
     twilio_account_sid: str = ""

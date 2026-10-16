@@ -25,3 +25,18 @@ async def reset_all() -> dict:
         await db.execute(delete(Complaint))
         await db.commit()
     return {"reset": True, **(await seed(reset=True))}
+
+
+async def _main() -> None:
+    from app.db import init_db
+    from app.police.db import init_police_db
+
+    await init_db()
+    await init_police_db()
+    print(await reset_all())
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(_main())

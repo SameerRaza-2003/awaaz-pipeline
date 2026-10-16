@@ -70,3 +70,31 @@ def test_entities_from_record():
     ents = entities_from_record(rec)
     kinds = {(e.value, e.kind) for e in ents}
     assert ("Sana", "person") in kinds and ("Zenith Textiles", "org") in kinds
+
+
+def test_eval_cases_raw_text_is_always_flagged():
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "evals"))
+    from cases import pii_cases
+
+    for c in pii_cases():
+        res = scan(c["record"]["incident_summary"], entities_from_record(c["record"]))
+        kinds = {f.get("entity_kind") or f["type"] for f in res.findings}
+        assert {"person", "phone"} <= kinds, c["id"]
+
+
+def test_cross_script_names_without_latin_false_positives():
+    ents = [Entity("Tahir Mehmood")]
+    assert not scan("طاہر محمود نے پیغامات بھیجے", ents).clean
+    assert scan("Three people were there and the tour was over.", ents).clean
+
+
+def test_similarity_threshold_applies(monkeypatch):
+    from app.tools.similarity import select_recipients
+
+    scores = [{"community_id": i, "name": str(i), "score": s, "provider": "openrouter:x"} for i, s in enumerate([0.8, 0.5, 0.45, 0.44, 0.1])]
+    chosen = select_recipients(scores)
+    assert [c["score"] for c in chosen] == [0.8, 0.5, 0.45]
+    assert len(select_recipients(scores, top_k=1)) == 1
