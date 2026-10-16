@@ -22,6 +22,7 @@ from app.events import bus
 
 Kind = Literal["sms", "call", "community_email", "news_email"]
 MAX_SEND_ATTEMPTS = 2
+RETRY_BASE_DELAY_S = 1.5
 
 
 @dataclass
@@ -221,7 +222,7 @@ class OutboundGuard:
             except Exception as e:  # noqa: BLE001
                 last_error = f"{type(e).__name__}: {e}"
                 if attempt + 1 < MAX_SEND_ATTEMPTS:
-                    await asyncio.sleep(1.5 * (attempt + 1))
+                    await asyncio.sleep(RETRY_BASE_DELAY_S * (attempt + 1))
         return DispatchResult(to, kind, "failed", error=last_error, mode=mode)
 
     async def _emit(self, session_id, res: DispatchResult, payload, agent, node, run_id) -> None:
