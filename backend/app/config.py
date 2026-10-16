@@ -27,7 +27,8 @@ class Settings(BaseSettings):
     model_drafting: str = ""
     embedding_provider: Literal["openrouter", "fastembed", "hash"] = "openrouter"
     embedding_model: str = "baai/bge-m3"
-    match_threshold: float = 0.45
+    match_threshold: float = 0.50
+    match_margin: float = 0.05  # also keep only communities within this distance of the best score (0 = off)
     match_threshold_hash: float = 0.2  # the offline hashing embedder scores lower
     match_top_k: int = 5
 

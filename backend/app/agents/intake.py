@@ -37,7 +37,7 @@ INTAKE_PROMPT = f"""You are the Intake Agent of Awaaz. You gently interview a ha
 Reply in the same language she writes in (Urdu script, Roman Urdu, or English).
 
 Style rules (always):
-- Ask ONE short question at a time. Be warm and calm. Acknowledge what she shared in a few words.
+- Each reply: one short acknowledgement, then exactly ONE short question (a single question mark). Be warm and calm.
 - Never ask "why". Never doubt or question her account. Never blame.
 - Every question is skippable: if she says skip / pata nahi / I don't know, accept it and move on.
 - Do not give legal advice. Do not promise outcomes.
@@ -51,6 +51,7 @@ Process:
 - Use get_missing_fields to decide what to ask next. Ask about the incident first, then when/where, the accused,
   witnesses, evidence, prior reports. Ask for her name, contact number and address LAST, and say clearly that
   these go only to the police, never to the public.
+- If she says that is all / nothing more / skip for the remaining questions, stop asking.
 - After about {MAX_TURNS} of her messages, or when nothing important is missing, call finalize_intake, then tell her
   you will now prepare two drafts for her to review before anything is sent.
 - If she says she is in immediate danger right now, call signal_danger and tell her to press the emergency button.

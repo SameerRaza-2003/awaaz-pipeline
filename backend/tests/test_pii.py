@@ -92,9 +92,25 @@ def test_cross_script_names_without_latin_false_positives():
 
 
 def test_similarity_threshold_applies(monkeypatch):
+    from app.config import get_settings
     from app.tools.similarity import select_recipients
+
+    monkeypatch.setenv("MATCH_THRESHOLD", "0.45")
+    monkeypatch.setenv("MATCH_MARGIN", "0")
+    get_settings.cache_clear()
 
     scores = [{"community_id": i, "name": str(i), "score": s, "provider": "openrouter:x"} for i, s in enumerate([0.8, 0.5, 0.45, 0.44, 0.1])]
     chosen = select_recipients(scores)
     assert [c["score"] for c in chosen] == [0.8, 0.5, 0.45]
     assert len(select_recipients(scores, top_k=1)) == 1
+
+
+def test_similarity_margin(monkeypatch):
+    from app.config import get_settings
+    from app.tools.similarity import select_recipients
+
+    monkeypatch.setenv("MATCH_THRESHOLD", "0.5")
+    monkeypatch.setenv("MATCH_MARGIN", "0.05")
+    get_settings.cache_clear()
+    scores = [{"community_id": i, "name": str(i), "score": s, "provider": "openrouter:x"} for i, s in enumerate([0.61, 0.57, 0.54, 0.3])]
+    assert [c["score"] for c in select_recipients(scores)] == [0.61, 0.57]

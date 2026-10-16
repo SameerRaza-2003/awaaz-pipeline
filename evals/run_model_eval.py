@@ -99,7 +99,7 @@ async def eval_tool_calls() -> dict:
     await report.start(sid, True)
     for t in ["My manager Bilal Ahmed at Zenith Textiles in Lahore touched me and sends messages at night, since March 2026.",
               "A colleague Sana saw it. I have WhatsApp messages. I told HR.", "My name is Ayesha Siddiqui, +923217654321, House 12 Model Town Lahore.",
-              "That is everything, please prepare the report."]:
+              "That is everything, please prepare the report.", "skip", "skip", "skip", "skip", "skip", "skip", "skip"]:
         r = await report.message(sid, t)
         if r["finalized"]:
             break
@@ -168,7 +168,7 @@ async def eval_intake(dialogues: list[dict]) -> dict:
         for t in d["turns"]:
             r = await report.message(sid, t)
             reply = r["reply"]
-            if reply.count("?") + reply.count("؟") > 2 or re.search(r"\bwhy\b|\bkyun\b|کیوں", reply, re.I):
+            if reply.count("?") + reply.count("؟") > 1 or re.search(r"\bwhy\b|\bkyun\b|کیوں", reply, re.I):
                 style_ok = False
             if r["finalized"]:
                 finalized = True

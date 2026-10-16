@@ -59,5 +59,10 @@ def select_recipients(scores: list[dict], threshold: float | None = None, top_k:
     if threshold is None:
         threshold = effective_threshold(scores)
     top_k = s.match_top_k if top_k is None else top_k
-    passing = [x for x in sorted(scores, key=lambda x: x["score"], reverse=True) if x["score"] >= threshold]
+    ranked = sorted(scores, key=lambda x: x["score"], reverse=True)
+    passing = [x for x in ranked if x["score"] >= threshold]
+    if passing and s.match_margin > 0:
+        # Embedding scores are compressed; also require being close to the best match.
+        best = passing[0]["score"]
+        passing = [x for x in passing if best - x["score"] <= s.match_margin]
     return passing[:top_k]
