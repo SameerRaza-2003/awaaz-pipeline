@@ -58,3 +58,34 @@ async def test_signed_in_session_uses_account_contact(monkeypatch):
     async with SessionLocal() as db:
         rows = (await db.scalars(select(DispatchLog))).all()
     assert {(r.kind, r.recipient) for r in rows} >= {("sms", "+923001234567"), ("call", "+923001234567"), ("discord", "discord:123456789012345678")}
+
+
+async def test_discord_webhook_priority(monkeypatch):
+    from app import sessions
+    from app.config import get_settings
+
+    env_hook = "https://discord.com/api/webhooks/111111111111111111/envTOKENenvTOKENenvTOKEN123"
+    account_hook = "https://discord.com/api/webhooks/222222222222222222/accTOKENaccTOKENaccTOKEN123"
+    setup_hook = "https://discord.com/api/webhooks/333333333333333333/setTOKENsetTOKENsetTOKEN123"
+    monkeypatch.setenv("DEFAULT_DISCORD_WEBHOOK", env_hook)
+    get_settings.cache_clear()
+    async with client() as c:
+        # anonymous, nothing set: the .env default
+        anon = (await c.post("/api/sessions", json={})).json()["session_id"]
+        assert await sessions.get_contact_discord(anon) == env_hook
+        # signed in with her own webhook: hers wins
+        tok = (await c.post("/api/auth/register", json={"username": "zara", "password": "longenough1"})).json()["token"]
+        h = {"Authorization": f"Bearer {tok}"}
+        await c.put("/api/me", headers=h, json={"trusted_contact": {"name": "Amma", "phone": "+923001234567", "discord_webhook": account_hook}})
+        sid = (await c.post("/api/sessions", headers=h, json={})).json()["session_id"]
+        assert await sessions.get_contact_discord(sid) == account_hook
+        # Setup saved without a webhook: still her account's, and the .env one is never copied in
+        await c.put(f"/api/sessions/{sid}/settings", json={"trusted_contact": {"name": "Amma", "phone": "+923001234567"}})
+        assert await sessions.get_contact_discord(sid) == account_hook
+        assert await sessions.get_own_discord(sid) is None
+        # a webhook entered in Setup for this session wins over everything
+        await c.put(f"/api/sessions/{sid}/settings", json={"trusted_contact": {"name": "Amma", "phone": "+923001234567", "discord_webhook": setup_hook}})
+        assert await sessions.get_contact_discord(sid) == setup_hook
+        # anonymous session that saved Setup without a webhook falls back to .env
+        await c.put(f"/api/sessions/{anon}/settings", json={"trusted_contact": {"name": "Sis", "phone": "+923001234568"}})
+        assert await sessions.get_contact_discord(anon) == env_hook and await sessions.get_own_discord(anon) is None

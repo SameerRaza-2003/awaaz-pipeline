@@ -107,7 +107,7 @@ async def put_settings(session_id: str, body: SettingsIn):
         if not phone and not webhook:
             raise HTTPException(422, "add a phone number or a Discord webhook for your trusted contact")
         if webhook is None and tc.discord_webhook is None:
-            webhook = await sessions.get_contact_discord(session_id)  # keep the saved one if the field was not sent
+            webhook = await sessions.get_own_discord(session_id)  # keep her own saved one; never copy fallbacks in
         await sessions.set_trusted_contact(session_id, tc.name.strip(), phone, webhook)
     await sessions.update_settings(session_id, country=body.country, locale=body.locale)
     return {"ok": True}
