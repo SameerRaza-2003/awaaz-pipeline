@@ -34,11 +34,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts",
-    ".next-proxytest/types/**/*.ts",
-    ".next-proxytest/dev/types/**/*.ts",
-    ".next-uitest/types/**/*.ts",
-    ".next-uitest/dev/types/**/*.ts"
+    "**/*.mts"
   ],
   "exclude": [
     "node_modules"
