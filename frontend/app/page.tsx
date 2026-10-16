@@ -6,7 +6,7 @@ import { Chat } from "@/components/Chat";
 import { EventLog } from "@/components/EventLog";
 import { SetupDrawer } from "@/components/SetupDrawer";
 import { WorkflowGraph } from "@/components/WorkflowGraph";
-import { api, Health, store } from "@/lib/api";
+import { api, ApiError, Health, store } from "@/lib/api";
 import { useEvents } from "@/lib/useEvents";
 import { deriveAgentCards, deriveNodeStates } from "@/lib/workflow";
 
@@ -39,7 +39,23 @@ export default function Home() {
     api<Health>("/healthz").then(setHealth).catch(() => {});
   }, [newSession]);
 
-  const { events, connected } = useEvents(sessionId ? `/api/sessions/${sessionId}/events` : null);
+  // If the session was deleted (e.g. after a demo reset), start a new one instead of retrying forever.
+  const sessionStillValid = useCallback(async () => {
+    if (!sessionId) return false;
+    try {
+      await api(`/api/sessions/${sessionId}`);
+      return true;
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) {
+        store.del("awaaz_session");
+        newSession();
+        return false;
+      }
+      throw e;
+    }
+  }, [sessionId, newSession]);
+
+  const { events, connected } = useEvents(sessionId ? `/api/sessions/${sessionId}/events` : null, sessionStillValid);
   const states = useMemo(() => deriveNodeStates(events), [events]);
   const cards = useMemo(() => deriveAgentCards(events), [events]);
 

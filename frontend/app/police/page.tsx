@@ -118,7 +118,21 @@ export default function PolicePage() {
     loadDetail();
   }, [loadDetail]);
 
-  const { events } = useEvents(token ? `/api/police/events?token=${encodeURIComponent(token)}` : null);
+  const tokenStillValid = useCallback(async () => {
+    if (!token) return false;
+    try {
+      await api("/api/police/complaints", { token });
+      return true;
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        logout();
+        return false;
+      }
+      throw e;
+    }
+  }, [token, logout]);
+
+  const { events } = useEvents(token ? `/api/police/events?token=${encodeURIComponent(token)}` : null, tokenStillValid);
   const lastId = events[events.length - 1]?.id;
   useEffect(() => {
     if (lastId) {
