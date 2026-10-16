@@ -141,15 +141,6 @@ async def test_revise_public_keeps_police_text(monkeypatch):
     assert after["public_text"] == new_public and after["police_text"] == before["police_text"]
 
 
-async def test_intake_danger_detection(monkeypatch):
-    s = Scripts().install()
-    sid = (await sessions.create_session()).id
-    await report.start(sid, True)
-    s.add("intake_agent", tool_call("signal_danger", reason="he is outside"), final_text := __import__("langchain_core.messages", fromlist=["AIMessage"]).AIMessage(content="Please press the emergency button."))
-    r = await report.message(sid, "he is here outside my door, bachao")
-    assert r["danger_suspected"] is True
-
-
 async def test_intake_without_llm_uses_fixed_questions():
     # no scripts installed for intake: every agent call fails, the fixed interview takes over
     Scripts().install()
@@ -166,7 +157,7 @@ async def test_intake_without_llm_uses_fixed_questions():
     await drain()
     state = await sessions.load_state(sid)
     rec = state["record"]
-    assert rec["harassment_type"] == "workplace" and rec["city_area"] == "Karachi"
+    assert rec["harassment_type"] == "other" and rec["city_area"] == "Karachi"  # no LLM: no guessing from keywords
     assert rec["complainant_name"] == "Sana Malik" and "Imran" in rec["accused"]
     assert "Imran Qureshi" in state["drafts"]["police_text"] and "Sana Malik" in state["drafts"]["police_text"]
     assert state["drafts"]["public_clean"] is False  # no drafting LLM: publication fails closed

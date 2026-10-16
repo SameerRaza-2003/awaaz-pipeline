@@ -11,7 +11,7 @@ from sqlalchemy import select
 
 from app.agents.drafting import drafting_agent
 from app.agents.gmail import gmail_agent, template_email
-from app.agents.intake import MAX_TURNS, build_record, fallback_turn, intake_agent, looks_like_danger
+from app.agents.intake import MAX_TURNS, build_record, fallback_turn, intake_agent
 from app.agents.matching import matching_agent
 from app.agents.police_agents import police_dispatch_agent, submit_complaint
 from app.agents.runner import AgentFailed, runner, wrap_data
@@ -20,7 +20,7 @@ from app.db import DispatchLog, PublicReport, SessionLocal
 from app.events import bus
 from app.outbound import guard
 from app.sessions import get_session, load_state, purge_state, save_state, set_phase
-from app.tools import similarity
+from app.tools import privacy, similarity
 from app.tools.pii import entities_from_record, scan
 from app.workflows import escalation
 from app.workflows.emergency import spawn
@@ -103,9 +103,6 @@ async def message(session_id: str, text: str) -> dict[str, Any]:
         state = await load_state(session_id)
         state.setdefault("transcript", []).append({"role": "user", "text": text})
         state["turns"] = state.get("turns", 0) + 1
-        danger = looks_like_danger(text)
-        if danger:
-            await bus.publish(session_id, "status", node="intake_agent", data={"danger_suspected": True, "message": "Possible danger detected"})
         note = None
         if state["turns"] >= MAX_TURNS:
             note = "turn limit reached: call finalize_intake now with what exists, then tell her drafts are being prepared."
@@ -137,7 +134,9 @@ async def message(session_id: str, text: str) -> dict[str, Any]:
                 else "I'm sorry, I had trouble understanding that. Could you tell me again, in any words you like?"
             )
         state["transcript"].append({"role": "assistant", "text": reply})
-        danger = danger or bool(state.pop("danger", False))
+        danger = bool(state.pop("danger", False))
+        if danger:
+            await bus.publish(session_id, "status", node="intake_agent", data={"danger_suspected": True, "message": "The Intake Agent noticed possible immediate danger"})
         finalized = bool(state.get("final"))
         await save_state(session_id, state)
         if finalized:
@@ -145,6 +144,19 @@ async def message(session_id: str, text: str) -> dict[str, Any]:
             await bus.publish(session_id, "step", node="intake_agent", data={"status": "done", "message": "Intake complete"})
             spawn(run_drafting(session_id))
     return {"reply": reply, "finalized": finalized, "danger_suspected": danger}
+
+
+async def case_entities(session_id: str, state: dict[str, Any], record: dict[str, Any]) -> list[dict[str, str]]:
+    """Known identifying details of this case: the explicit slots plus everything the privacy model finds."""
+    if state.get("entities"):
+        return state["entities"]
+    slots = {**state.get("slots", {}), **record}
+    ents = [{"value": e.value, "kind": e.kind} for e in entities_from_record(slots)]
+    said = "\n".join(m["text"] for m in state.get("transcript", []) if m["role"] == "user")
+    for item in await privacy.extract_identifiers(session_id, record, said):
+        if item not in ents:
+            ents.append(item)
+    return ents
 
 
 def police_template(rec: dict[str, Any]) -> str:
@@ -166,8 +178,7 @@ async def run_drafting(session_id: str, instruction: str | None = None, target: 
     async with _locks[session_id]:
         state = await load_state(session_id)
     record = state.get("record") or build_record(state.get("slots", {}), state.get("default_country", "PK")).model_dump()
-    slots = {**state.get("slots", {}), **record}
-    ents = [{"value": e.value, "kind": e.kind} for e in entities_from_record(slots)]
+    ents = await case_entities(session_id, state, record)
     previous = state.get("drafts")
     work: dict[str, Any] = {"entities": ents}
     if previous and target == "public":
@@ -190,14 +201,21 @@ async def run_drafting(session_id: str, instruction: str | None = None, target: 
     if target == "police" and previous:
         # A police-only revision never changes the approved public text.
         drafts["public_text"], drafts["public_clean"], drafts["pii_findings"] = previous["public_text"], previous.get("public_clean", False), previous.get("pii_findings", [])
-    # Final deterministic gate on the public text.
-    check = scan(drafts["public_text"], ents) if drafts["public_text"] else None
+    # Final gate: the scanner always re-runs; the LLM review only re-runs if this exact text was not reviewed by save_drafts.
+    text = drafts["public_text"]
+    if not text:
+        check = None
+    elif work.get("reviewed_text") == text or (target == "police" and previous and previous.get("public_clean")):
+        check = scan(text, ents)
+    else:
+        check = await privacy.full_check(session_id, text, ents)
     drafts["public_clean"] = bool(check and check.clean)
     drafts["pii_findings"] = check.findings if check else []
     async with _locks[session_id]:
         state = await load_state(session_id)
         state["drafts"] = drafts
         state["record"] = record
+        state["entities"] = ents
         await save_state(session_id, state)
         await set_phase(session_id, "review")
     await bus.publish(
@@ -233,13 +251,18 @@ async def confirm(session_id: str, police_text: str | None, public_text: str | N
         if not drafts:
             raise FlowError(409, "no drafts")
         record = state["record"]
-        slots = {**state.get("slots", {}), **record}
-        ents = [{"value": e.value, "kind": e.kind} for e in entities_from_record(slots)]
+        ents = state.get("entities") or [{"value": e.value, "kind": e.kind} for e in entities_from_record({**state.get("slots", {}), **record})]
         final_police = (police_text or drafts["police_text"]).strip()
         final_public = (public_text if public_text is not None else drafts["public_text"]).strip()
-        check = scan(final_public, ents) if final_public else None
+        edited = public_text is not None and final_public != drafts["public_text"].strip()
+        if not final_public:
+            check = None
+        elif edited:
+            check = await privacy.full_check(session_id, final_public, ents)  # survivor's own edit: both checks again
+        else:
+            check = scan(final_public, ents) if drafts.get("public_clean") else None
         public_clean = bool(check and check.clean)
-        if public_text is not None and public_text.strip() != drafts["public_text"].strip() and not public_clean:
+        if edited and not public_clean:
             raise FlowError(422, "Your edited public text contains personal information: " + ", ".join(sorted({f["type"] for f in check.findings})) if check else "empty public text")
         public_ref = new_public_ref()
         country = record.get("country") or sess.country

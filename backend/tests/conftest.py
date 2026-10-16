@@ -17,6 +17,7 @@ async def fresh_env(tmp_path, monkeypatch):
     monkeypatch.setenv("OUTBOUND_MODE", "dry_run")
     monkeypatch.setenv("SCHEDULER_POLL_S", "0.2")
     monkeypatch.setenv("GEOCODER", "nominatim")
+    monkeypatch.setenv("PRIVACY_LLM_REVIEW", "false")  # enabled explicitly in test_privacy.py
     get_settings.cache_clear()
     crypto.reset()
 

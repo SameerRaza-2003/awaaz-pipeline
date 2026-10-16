@@ -53,7 +53,7 @@ GENERIC_PLACE_WORDS = {
 @dataclass
 class Entity:
     value: str
-    kind: str = "person"  # person | org | place | contact
+    kind: str = "person"  # person | org | place | contact | identifier
 
 
 @dataclass
@@ -148,7 +148,14 @@ def scan(text: str, known_entities: list[Any] | None = None) -> ScanResult:
             findings.append({"type": kind, "match": m.group(0), "start": m.start(), "end": m.end()})
 
     text_tokens = [(t, s, e, norm_token(t)) for t, s, e in _tokens(text)]
+    flat_text = re.sub(r"[^0-9a-z]", "", translit(text).lower())
     for ent in _coerce(known_entities):
+        if ent.kind == "identifier":
+            # Plates, ID numbers, handles: match the alphanumeric core anywhere, ignoring spacing and dashes.
+            core = re.sub(r"[^0-9a-z]", "", translit(ent.value).lower())
+            if len(core) >= 3 and core in flat_text:
+                findings.append({"type": "known_entity", "entity_kind": "identifier", "match": ent.value})
+            continue
         if ent.kind == "contact":
             # phone numbers / emails / addresses given by the survivor: compare digit runs and long words
             digits = re.sub(r"\D", "", ent.value)
@@ -208,13 +215,4 @@ def entities_from_record(rec: dict[str, Any]) -> list[Entity]:
     add(rec.get("institution_name"), "org")
     add(rec.get("complainant_contact"), "contact")
     add(rec.get("complainant_address"), "contact")
-    # Free-text slots may carry names too: treat capitalised words as possible names.
-    for slot in ("accused", "witnesses", "institution_involved"):
-        val = rec.get(slot)
-        if not val:
-            continue
-        kind = "org" if slot == "institution_involved" else "person"
-        for tok, _, _ in _tokens(str(val)):
-            if tok[:1].isupper() and tok.lower() not in NAME_STOPWORDS and tok.lower() not in GENERIC_PLACE_WORDS and len(tok) >= 3:
-                ents.append(Entity(tok, kind))
     return ents

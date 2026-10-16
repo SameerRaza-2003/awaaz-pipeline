@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from app.agents.runner import AgentSpec, RunContext, make_tool
 from app.agents.schemas import DraftingDone
 from app.tools.pii import Entity, scan
+from app.tools.privacy import review_public_text
 
 MAX_ATTEMPTS = 3
 
@@ -74,6 +75,18 @@ async def _save_drafts(ctx: RunContext, police_text: str, public_text: str) -> d
             "findings": res.findings,
             "attempts_left": MAX_ATTEMPTS - ctx.state["save_attempts"],
         }
+    # Second, independent read by the privacy reviewer: it can only make the check stricter.
+    review = await review_public_text(ctx.session_id, public_text)
+    if not review["clean"]:
+        ctx.state["drafts"]["public_clean"] = False
+        ctx.state["drafts"]["pii_findings"] = [{"type": "privacy_review", "match": d} for d in review.get("identifying_details", [])]
+        return {
+            "saved": False,
+            "error": "the privacy reviewer found identifying details; remove or generalise them",
+            "identifying_details": review.get("identifying_details") or [review.get("error")],
+            "attempts_left": MAX_ATTEMPTS - ctx.state["save_attempts"],
+        }
+    ctx.state["reviewed_text"] = public_text
     return {"saved": True}
 
 
