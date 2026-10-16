@@ -1,4 +1,4 @@
-"""Gmail Agent: writes and sends outreach emails (modes: communities, news)."""
+"""Gmail Agent: writes and sends outreach emails (modes: communities, news, authority)."""
 
 from pydantic import BaseModel, Field
 
@@ -26,11 +26,29 @@ recorded within the deadline. You inform news agencies.
 For EACH recipient listed in the data, write one email (one recipient per email):
 - Subject: short and neutral, include the public reference.
 - Body: a short note that a complaint with public reference {public_ref} was filed with the police on {filed_on},
-  and no action was recorded after the deadline; then the public description VERBATIM between the lines
+  and that the police have taken no action against it after the deadline; then the public description VERBATIM between the lines
   "--- Case description ---" and "--- End ---"; then the sentence "No personal information about the complainant
   is shared in this message."; then "Reply to: {reply_to}".
 Never include any police reference number, names or contact details.
 Call check_email_safety on the body, then send_email. Return EmailBatchResult with what send_email returned."""
+
+
+AUTHORITY_PROMPT = """You are the Gmail Agent of Awaaz in AUTHORITY mode. A survivor approved an anonymised public version of a
+harassment case. You send the social-media-post version of it to the relevant authority so they can see what is being
+shared publicly and act on it.
+
+For EACH recipient listed in the data, write one email (one recipient per email):
+- Subject: short and neutral, include the public reference.
+- Body: a 1-2 sentence note that Awaaz received this anonymised case and the public version below is being shared with
+  communities; then the public description VERBATIM between the lines "--- Case description ---" and "--- End ---";
+  then the social-media post version (max 280 characters, adds NO facts beyond the description); then
+  "Reply to: {reply_to}".
+Never include any police reference number, names or contact details.
+Call check_email_safety on the body, then send_email. Return EmailBatchResult with what send_email returned."""
+
+EMAIL_KIND = {"communities": "community_email", "news": "news_email", "authority": "authority_email"}
+EMAIL_NODE = {"communities": "gmail_communities", "news": "gmail_news", "authority": "gmail_authority"}
+EMAIL_PROMPT = {"communities": COMMUNITIES_PROMPT, "news": NEWS_PROMPT, "authority": AUTHORITY_PROMPT}
 
 
 class BodyArgs(BaseModel):
@@ -76,7 +94,7 @@ async def _send(ctx: RunContext, to: str, subject: str, body: str) -> dict:
     probs = body_problems(ctx, subject, body)
     if probs:
         return {"to": to, "status": "refused", "error": "; ".join(probs)}
-    kind = "community_email" if ctx.state["mode"] == "communities" else "news_email"
+    kind = EMAIL_KIND[ctx.state["mode"]]
     res = await guard.dispatch(
         kind=kind,  # type: ignore[arg-type]
         key=ctx.state["public_ref"],
@@ -100,12 +118,8 @@ def _tools(ctx: RunContext):
 def gmail_agent(mode: str) -> AgentSpec:
     s = get_settings()
     reply_to = s.email_reply_to or s.smtp_user or "reply@awaaz.example"
-    if mode == "communities":
-        prompt = COMMUNITIES_PROMPT.replace("{reply_to}", reply_to)
-        node = "gmail_communities"
-    else:
-        prompt = NEWS_PROMPT.replace("{reply_to}", reply_to)
-        node = "gmail_news"
+    prompt = EMAIL_PROMPT[mode].replace("{reply_to}", reply_to)
+    node = EMAIL_NODE[mode]
     return AgentSpec(name=f"gmail_agent_{mode}", node=node, system_prompt=prompt, build_tools=_tools, output_schema=EmailBatchResult, recursion_limit=40)
 
 
@@ -122,11 +136,23 @@ def template_email(mode: str, public_ref: str, public_text: str, filed_on: str |
             "and complaints deserve action. #Awaaz\n\n"
             f"Reply to: {reply_to}\nReply STOP to stop receiving cases."
         )
+    elif mode == "authority":
+        subject = f"Anonymised case {public_ref}: public post version for your attention"
+        body = (
+            f"Awaaz received an anonymised harassment case (public reference {public_ref}). The version below, written "
+            "for social media, is being shared with activist communities.\n\n"
+            f"--- Case description ---\n{public_text}\n--- End ---\n\n"
+            f"Social media post: A survivor has reported harassment (case {public_ref}). Survivors deserve to be heard "
+            "and complaints deserve action. #Awaaz\n\n"
+            "No personal information about the survivor is shared in this message.\n\n"
+            f"Reply to: {reply_to}"
+        )
     else:
         subject = f"Unaddressed harassment complaint {public_ref}"
         body = (
             f"A harassment complaint with public reference {public_ref} was filed with the police on {filed_on}. "
-            "No action was recorded after the deadline.\n\n"
+            "The police have taken no action against this complaint after the deadline, so the survivor is bringing "
+            "the case to your attention.\n\nThe full anonymised case description follows.\n\n"
             f"--- Case description ---\n{public_text}\n--- End ---\n\n"
             "No personal information about the complainant is shared in this message.\n\n"
             f"Reply to: {reply_to}"

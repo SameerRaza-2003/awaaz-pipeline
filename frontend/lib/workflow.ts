@@ -2,19 +2,22 @@ import { AwaazEvent } from "./api";
 
 export type NodeStatus = "idle" | "running" | "waiting" | "done" | "error" | "skipped";
 
-export const NODES: { id: string; label: string; kind: "gate" | "agent" | "human" | "timer"; lane: string }[] = [
-  { id: "danger_gate", label: "Danger check", kind: "gate", lane: "start" },
-  { id: "location_agent", label: "Location Agent", kind: "agent", lane: "emergency" },
-  { id: "twilio_agent", label: "Alert Agent", kind: "agent", lane: "emergency" },
-  { id: "intake_agent", label: "Intake Agent", kind: "agent", lane: "report" },
-  { id: "drafting_agent", label: "Drafting Agent", kind: "agent", lane: "report" },
-  { id: "user_review", label: "Your review", kind: "human", lane: "report" },
-  { id: "police_dispatch_agent", label: "Police Dispatch Agent", kind: "agent", lane: "police" },
-  { id: "matching_agent", label: "Matching Agent", kind: "agent", lane: "public" },
-  { id: "gmail_communities", label: "Email · activist groups", kind: "agent", lane: "public" },
-  { id: "escalation_timer", label: "24-hour timer", kind: "timer", lane: "police" },
-  { id: "police_status_agent", label: "Police Status Agent", kind: "agent", lane: "police" },
-  { id: "gmail_news", label: "Email · news outlets", kind: "agent", lane: "police" },
+export type NodeDef = { id: string; label: string; kind: "gate" | "agent" | "human" | "timer"; lane: string; desc: string };
+
+export const NODES: NodeDef[] = [
+  { id: "danger_gate", label: "Danger check", kind: "gate", lane: "start", desc: "Are you in danger right now?" },
+  { id: "location_agent", label: "Location Agent", kind: "agent", lane: "emergency", desc: "Finds where you are" },
+  { id: "twilio_agent", label: "Alert Agent", kind: "agent", lane: "emergency", desc: "Alerts your trusted contact" },
+  { id: "intake_agent", label: "Intake Agent", kind: "agent", lane: "report", desc: "Listens and gathers the facts" },
+  { id: "drafting_agent", label: "Drafting Agent", kind: "agent", lane: "report", desc: "Writes police and public versions" },
+  { id: "user_review", label: "Your review", kind: "human", lane: "report", desc: "You approve before anything is sent" },
+  { id: "police_dispatch_agent", label: "Police Dispatch Agent", kind: "agent", lane: "police", desc: "Files the complaint with police" },
+  { id: "escalation_timer", label: "24-hour timer", kind: "timer", lane: "police", desc: "Waits for police action" },
+  { id: "police_status_agent", label: "Police Status Agent", kind: "agent", lane: "police", desc: "Checks if police acted" },
+  { id: "gmail_news", label: "Email · news outlets", kind: "agent", lane: "police", desc: "Escalates if nothing happened" },
+  { id: "matching_agent", label: "Matching Agent", kind: "agent", lane: "public", desc: "Picks relevant activist groups" },
+  { id: "gmail_communities", label: "Email · activist groups", kind: "agent", lane: "public", desc: "Emails the anonymised case" },
+  { id: "gmail_authority", label: "Email · authority", kind: "agent", lane: "authority", desc: "Sends the social-media post version" },
 ];
 
 export const EDGES: [string, string][] = [
@@ -25,6 +28,7 @@ export const EDGES: [string, string][] = [
   ["drafting_agent", "user_review"],
   ["user_review", "police_dispatch_agent"],
   ["user_review", "matching_agent"],
+  ["user_review", "gmail_authority"],
   ["matching_agent", "gmail_communities"],
   ["police_dispatch_agent", "escalation_timer"],
   ["escalation_timer", "police_status_agent"],
@@ -85,7 +89,7 @@ export function deriveNodeStates(events: AwaazEvent[]): Record<string, NodeState
           set("twilio_agent", { status: "done" }, e.ts);
         }
         if (d.workflow === "report") {
-          for (const n of ["police_dispatch_agent", "matching_agent", "gmail_communities"])
+          for (const n of ["police_dispatch_agent", "matching_agent", "gmail_communities", "gmail_authority"])
             if (s[n].status === "running" || s[n].status === "error") set(n, { status: "done" }, e.ts);
         }
         break;

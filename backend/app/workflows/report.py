@@ -10,7 +10,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from sqlalchemy import select
 
 from app.agents.drafting import drafting_agent
-from app.agents.gmail import gmail_agent, template_email
+from app.agents.gmail import EMAIL_KIND, gmail_agent, template_email
 from app.agents.intake import MAX_TURNS, build_record, fallback_turn, intake_agent
 from app.agents.matching import matching_agent
 from app.agents.police_agents import police_dispatch_agent, submit_complaint
@@ -288,8 +288,9 @@ async def confirm(session_id: str, police_text: str | None, public_text: str | N
 async def dispatch_all(session_id: str, work: dict[str, Any]) -> dict[str, Any]:
     receipt: dict[str, Any] = {"public_ref": work["public_ref"], "public_clean": work["public_clean"]}
     try:
-        police_res, community_res = await asyncio.gather(
-            police_branch(session_id, work), community_branch(session_id, work), return_exceptions=True
+        police_res, community_res, authority_res = await asyncio.gather(
+            police_branch(session_id, work), community_branch(session_id, work), authority_branch(session_id, work),
+            return_exceptions=True,
         )
         if isinstance(police_res, BaseException):
             await bus.publish(session_id, "error", node="police_dispatch_agent", data={"message": f"Police submission failed: {police_res}"})
@@ -297,8 +298,12 @@ async def dispatch_all(session_id: str, work: dict[str, Any]) -> dict[str, Any]:
         if isinstance(community_res, BaseException):
             await bus.publish(session_id, "error", node="gmail_communities", data={"message": f"Community outreach failed: {community_res}"})
             community_res = {"communities": []}
+        if isinstance(authority_res, BaseException):
+            await bus.publish(session_id, "error", node="gmail_authority", data={"message": f"Authority email failed: {authority_res}"})
+            authority_res = {"authority": None}
         receipt.update(police_res)
         receipt.update(community_res)
+        receipt.update(authority_res)
         receipt.pop("police_ref", None)  # the survivor receipt never needs the police reference
         await bus.publish(session_id, "workflow.end", node="gmail_communities", data={"workflow": "report", "receipt": receipt})
     finally:
@@ -378,6 +383,20 @@ async def community_branch(session_id: str, work: dict[str, Any]) -> dict[str, A
     }
 
 
+async def authority_branch(session_id: str, work: dict[str, Any]) -> dict[str, Any]:
+    """Social-media-post version of the approved public text, sent to the (demo) authority inbox."""
+    if not work["public_clean"]:
+        await bus.publish(session_id, "step", node="gmail_authority", data={"status": "skipped", "message": "Public report on hold: nothing sent to the authority"})
+        return {"authority": None}
+    to = get_settings().authority_recipient
+    if not to:
+        await bus.publish(session_id, "step", node="gmail_authority", data={"status": "skipped", "message": "No authority email configured (AUTHORITY_EMAIL)"})
+        return {"authority": None}
+    results = await send_emails(session_id, "authority", work, [{"name": "Authority (demo)", "email": to}])
+    status = next((r["status"] for r in results if r["to"] == to), "unknown")
+    return {"authority": {"name": "Authority (demo)", "status": status}}
+
+
 async def send_emails(session_id: str, mode: str, work: dict[str, Any], recipients: list[dict], filed_on: str | None = None) -> list[dict]:
     """Gmail Agent, then a deterministic gap-filler so every approved recipient gets exactly one email."""
     state = {
@@ -400,7 +419,7 @@ async def send_emails(session_id: str, mode: str, work: dict[str, Any], recipien
                          timeout_s=max(get_settings().agent_timeout_s, 30.0 * len(recipients)))
     except AgentFailed:
         await bus.publish(session_id, "step", node=spec.node, data={"fallback": True, "message": "Sending with the fixed template"})
-    kind = "community_email" if mode == "communities" else "news_email"
+    kind = EMAIL_KIND[mode]
     async with SessionLocal() as db:
         rows = (await db.scalars(select(DispatchLog).where(DispatchLog.public_ref == work["public_ref"], DispatchLog.kind == kind))).all()
     done = {r.recipient for r in rows if r.status in ("sent", "dry_run", "blocked", "pending")}
