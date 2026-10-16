@@ -26,7 +26,7 @@ recorded within the deadline. You inform news agencies.
 For EACH recipient listed in the data, write one email (one recipient per email):
 - Subject: short and neutral, include the public reference.
 - Body: a short note that a complaint with public reference {public_ref} was filed with the police on {filed_on},
-  and no action was recorded after the deadline; then the public description VERBATIM between the lines
+  and that the police have taken no action against it after the deadline; then the public description VERBATIM between the lines
   "--- Case description ---" and "--- End ---"; then the sentence "No personal information about the complainant
   is shared in this message."; then "Reply to: {reply_to}".
 Never include any police reference number, names or contact details.
@@ -151,7 +151,8 @@ def template_email(mode: str, public_ref: str, public_text: str, filed_on: str |
         subject = f"Unaddressed harassment complaint {public_ref}"
         body = (
             f"A harassment complaint with public reference {public_ref} was filed with the police on {filed_on}. "
-            "No action was recorded after the deadline.\n\n"
+            "The police have taken no action against this complaint after the deadline, so the survivor is bringing "
+            "the case to your attention.\n\nThe full anonymised case description follows.\n\n"
             f"--- Case description ---\n{public_text}\n--- End ---\n\n"
             "No personal information about the complainant is shared in this message.\n\n"
             f"Reply to: {reply_to}"

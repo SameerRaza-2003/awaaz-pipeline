@@ -19,6 +19,7 @@ async def fresh_env(tmp_path, monkeypatch):
     monkeypatch.setenv("GEOCODER", "nominatim")
     monkeypatch.setenv("PRIVACY_LLM_REVIEW", "false")
     monkeypatch.setenv("DEFAULT_DISCORD_WEBHOOK", "")
+    monkeypatch.setenv("NEWS_AGENCY_EMAIL", "")  # tests use the seeded agencies
     monkeypatch.setenv("DEFAULT_TRUSTED_CONTACT", "")  # enabled explicitly in test_privacy.py
     get_settings.cache_clear()
     crypto.reset()

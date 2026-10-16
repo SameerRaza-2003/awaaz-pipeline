@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     outbound_allowlist: str = ""
     alert_authorities: bool = False
     authority_number: str = ""
+    news_agency_email: str = ""  # when set, news escalation goes to this inbox instead of the seeded agencies
     authority_email: str = ""  # demo authority inbox for the social-media-post version; falls back to the reply-to / SMTP address
     default_trusted_contact: str = ""
     default_discord_webhook: str = ""  # used when a session has not set its own trusted contact webhook
@@ -84,7 +85,10 @@ class Settings(BaseSettings):
     @property
     def allowlist(self) -> set[str]:
         listed = {normalize_recipient(x) for x in self.outbound_allowlist.split(",") if x.strip()}
-        return listed | ({self.authority_recipient} if self.authority_recipient else set())
+        extra = {self.authority_recipient} if self.authority_recipient else set()
+        if self.news_agency_email.strip():
+            extra.add(normalize_recipient(self.news_agency_email))
+        return listed | extra
 
     @property
     def authority_recipient(self) -> str:
