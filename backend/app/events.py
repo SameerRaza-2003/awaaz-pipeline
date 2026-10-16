@@ -135,28 +135,27 @@ class EventBus:
         also: tuple[str, ...] = (),
     ) -> dict[str, Any]:
         payload = mask(_jsonable(data or {}))
+        data_json = json.dumps(payload, ensure_ascii=False)
+        streams = list(dict.fromkeys((session_id, *also)))
         async with self._get_lock():
             async with SessionLocal() as db:
-                row = EventRow(
-                    session_id=session_id,
-                    ts=utcnow(),
-                    kind=kind,
-                    agent=agent,
-                    node=node or agent,
-                    run_id=run_id,
-                    data_json=json.dumps(payload, ensure_ascii=False),
-                )
-                db.add(row)
+                rows = []
+                ts = utcnow()
+                for stream in streams:
+                    # One persisted row per stream so each stream replays on its own.
+                    row = EventRow(session_id=stream, ts=ts, kind=kind, agent=agent, node=node or agent,
+                                   run_id=run_id, data_json=data_json)
+                    db.add(row)
+                    rows.append(row)
                 await db.commit()
-                await db.refresh(row)
-                event = serialize(row)
-        for stream in (session_id, *also):
-            for q in list(self._subs.get(stream, ())):
-                try:
-                    q.put_nowait(event)
-                except asyncio.QueueFull:
-                    pass
-        return event
+                events = [serialize(r) for r in rows]
+            for stream, event in zip(streams, events, strict=True):
+                for q in list(self._subs.get(stream, ())):
+                    try:
+                        q.put_nowait(event)
+                    except asyncio.QueueFull:
+                        pass
+        return events[0]
 
     def subscribe(self, stream: str) -> asyncio.Queue:
         q: asyncio.Queue = asyncio.Queue(maxsize=1000)
