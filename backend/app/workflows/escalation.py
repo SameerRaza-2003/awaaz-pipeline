@@ -100,27 +100,36 @@ async def recover_running() -> None:
         await db.commit()
 
 
-async def trigger_news(public_ref: str, session_id: str) -> dict[str, Any]:
-    """Guarded, idempotent: re-checks cancellation, publication safety and police status."""
-    from app.workflows.report import send_emails
-
+async def check_news_allowed(public_ref: str) -> dict[str, Any]:
+    """Every guard for news escalation: cancellation, publication safety, police status, recipients."""
     async with SessionLocal() as db:
         r = await db.get(PublicReport, public_ref)
         agencies = (await db.scalars(select(NewsAgency).where(NewsAgency.active.is_(True)))).all() if r else []
     if r is None:
-        return {"triggered": False, "reason": "unknown public_ref"}
+        return {"allowed": False, "reason": "unknown public_ref"}
     if r.escalation_cancelled:
-        return {"triggered": False, "reason": "escalation cancelled by survivor"}
+        return {"allowed": False, "reason": "escalation cancelled by survivor"}
     if not r.public_clean or not r.public_text:
-        return {"triggered": False, "reason": "public description is on hold (privacy check)"}
+        return {"allowed": False, "reason": "public description is on hold (privacy check)"}
     if not r.police_ref:
-        return {"triggered": False, "reason": "no police reference"}
+        return {"allowed": False, "reason": "no police reference"}
     status = (await police_client.status(r.police_ref))["status"]
     if evaluate_addressed(status):
-        return {"triggered": False, "reason": f"complaint addressed ({status})"}
+        return {"allowed": False, "reason": f"complaint addressed ({status})", "status": status}
     recipients = [{"name": a.name, "email": a.email} for a in agencies if a.country.upper() == r.country.upper()]
     if not recipients:
-        return {"triggered": False, "reason": f"no news agencies for {r.country}"}
+        return {"allowed": False, "reason": f"no news agencies for {r.country}"}
+    return {"allowed": True, "status": status, "report": r, "recipients": recipients}
+
+
+async def trigger_news(public_ref: str, session_id: str) -> dict[str, Any]:
+    """Guarded and idempotent: re-checks everything, then runs the Gmail Agent in news mode."""
+    from app.workflows.report import send_emails
+
+    check = await check_news_allowed(public_ref)
+    if not check["allowed"]:
+        return {"triggered": False, "reason": check["reason"]}
+    r, recipients = check["report"], check["recipients"]
     await bus.publish(session_id, "step", node="gmail_news", data={"status": "running", "message": f"Escalating {public_ref} to {len(recipients)} news agencies"}, also=STREAMS)
     work = {"public_ref": public_ref, "public_text": r.public_text, "police_ref": r.police_ref, "entities": []}
     results = await send_emails(session_id, "news", work, recipients, filed_on=r.created_at.strftime("%d %B %Y"))
@@ -139,12 +148,16 @@ async def run_job(job_id: int) -> dict[str, Any]:
     if r.escalation_cancelled:
         return {"status": None, "addressed": None, "escalated": False, "reason": "cancelled"}
 
-    triggered: dict[str, Any] = {}
+    requested: dict[str, Any] = {}
 
     async def trigger(public_ref: str) -> dict:
-        res = await trigger_news(public_ref, sid)
-        triggered.update(res)
-        return res
+        # The agent's trigger tool only records the decision after the guards pass;
+        # the workflow runs the Gmail Agent afterwards as its own step (so it is not inside this agent's timeout).
+        check = await check_news_allowed(public_ref)
+        requested.update(check)
+        if not check["allowed"]:
+            return {"triggered": False, "reason": check["reason"]}
+        return {"triggered": True, "message": "news escalation scheduled; the Gmail Agent will send it next"}
 
     state = {"police_ref": r.police_ref, "public_ref": r.public_ref, "trigger": trigger}
     await bus.publish(sid, "status", node="police_status_agent", data={"message": f"Police Status Agent checking {r.police_ref}…"}, also=STREAMS)
@@ -161,18 +174,19 @@ async def run_job(job_id: int) -> dict[str, Any]:
     except AgentFailed:
         await bus.publish(sid, "step", node="police_status_agent", data={"fallback": True, "message": "Checking status directly"}, also=STREAMS)
 
-    # The workflow, not the model, makes the final call.
+    # The workflow, not the model, makes the final call: it re-checks and escalates whatever the agent decided.
     status = (await police_client.status(r.police_ref))["status"]
     addressed = evaluate_addressed(status)
-    if not addressed and not triggered.get("triggered"):
-        await trigger(r.public_ref)
-    escalated = bool(triggered.get("triggered"))
+    sent: dict[str, Any] = {}
+    if not addressed:
+        sent = await trigger_news(r.public_ref, sid)
+    escalated = bool(sent.get("triggered"))
     if escalated:
         reason = f"Complaint unaddressed after the deadline ({status}) → escalation triggered"
     elif addressed:
         reason = f"Addressed ({status}): no escalation"
     else:
-        reason = triggered.get("reason") or "not escalated"
+        reason = sent.get("reason") or requested.get("reason") or "not escalated"
     result = {"status": status, "addressed": addressed, "escalated": escalated, "reason": reason, "agent_decision": decision}
     await bus.publish(sid, "status", node="police_status_agent", data={"message": f"{r.police_ref}: {reason}", **{k: v for k, v in result.items() if k != 'agent_decision'}}, also=STREAMS)
     if not escalated:

@@ -2,6 +2,7 @@
 applies a timeout and bounded retries, and records an agent_runs row."""
 
 import asyncio
+import contextvars
 import json
 import time
 import uuid
@@ -242,13 +243,16 @@ class AgentRunner:
                     response_format=ToolStrategy(spec.output_schema) if spec.output_schema else None,
                     name=spec.name,
                 )
-                result = await asyncio.wait_for(
+                # A fresh context so an agent started from inside another agent's tool
+                # never inherits the outer agent's callbacks.
+                task = asyncio.create_task(
                     agent.ainvoke(
                         {"messages": msgs},
                         config={"callbacks": [handler], "recursion_limit": spec.recursion_limit},
                     ),
-                    timeout=timeout,
+                    context=contextvars.Context(),
                 )
+                result = await asyncio.wait_for(task, timeout=timeout)
                 break
             except LLMNotConfigured as e:
                 last_error = e

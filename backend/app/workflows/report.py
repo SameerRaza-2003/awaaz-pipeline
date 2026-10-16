@@ -373,7 +373,8 @@ async def send_emails(session_id: str, mode: str, work: dict[str, Any], recipien
     spec = gmail_agent(mode)
     try:
         await runner.run(spec, session_id=session_id, messages=f"Send the {mode} emails.\n{wrap_data('data', data)}", state=state,
-                         also=(("system",) if mode == "news" else ()))
+                         also=(("system",) if mode == "news" else ()),
+                         timeout_s=max(get_settings().agent_timeout_s, 30.0 * len(recipients)))
     except AgentFailed:
         await bus.publish(session_id, "step", node=spec.node, data={"fallback": True, "message": "Sending with the fixed template"})
     kind = "community_email" if mode == "communities" else "news_email"
