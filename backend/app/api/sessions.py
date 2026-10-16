@@ -1,10 +1,11 @@
 import secrets
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from app import sessions
+from app import accounts, sessions
+from app.api.accounts import optional_user
 from app.api.sse import event_stream, parse_last_id
 from app.config import get_settings, normalize_recipient
 from app.events import bus
@@ -52,9 +53,14 @@ async def require_session(session_id: str):
 
 
 @router.post("")
-async def create_session(body: CreateSession | None = None):
+async def create_session(body: CreateSession | None = None, user_id: str | None = Depends(optional_user)):
     body = body or CreateSession()
-    row = await sessions.create_session(body.locale, body.country)
+    locale, country = body.locale, body.country
+    if user_id:
+        profile = accounts.profile_of(await accounts.get_user(user_id))
+        locale = profile.get("locale") or locale
+        country = country or profile.get("country")
+    row = await sessions.create_session(locale, country, user_id=user_id)
     return {"session_id": row.id, "country": row.country, "locale": row.locale}
 
 
@@ -80,6 +86,7 @@ async def get_session(session_id: str):
         "country": row.country,
         "locale": row.locale,
         "trusted_contact": trusted_contact_view(contact, discord),
+        "signed_in": bool(row.user_id),
         "transcript": state.get("transcript", []),
         "drafts": state.get("drafts"),
         "receipt": state.get("receipt"),

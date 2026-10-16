@@ -1,14 +1,14 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api, Health, quickExit } from "@/lib/api";
+import { api, auth, Health, quickExit } from "@/lib/api";
 
-const LINKS = [
+const LINKS: { href: string; label: string; short?: string }[] = [
   { href: "/", label: "Home" },
-  { href: "/about", label: "How it works" },
+  { href: "/about", label: "How it works", short: "About" },
   { href: "/police", label: "Police" },
 ];
 
@@ -41,6 +41,18 @@ export function Nav() {
   const path = usePathname();
   const [health, setHealth] = useState<Health | null>(null);
   const [down, setDown] = useState(false);
+  const [user, setUser] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sync = () => setUser(auth.get()?.username ?? null);
+    sync();
+    window.addEventListener("awaaz-auth", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("awaaz-auth", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
 
   useEffect(() => {
     api<Health>("/healthz")
@@ -59,15 +71,30 @@ export function Nav() {
           <Link
             key={l.href}
             href={l.href}
-            className={`rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+            className={`whitespace-nowrap rounded-md px-2 py-1.5 text-sm transition-colors sm:px-2.5 ${
               path === l.href ? "bg-surface-3 font-medium text-ink" : "text-ink-2 hover:bg-surface-2"
             }`}
           >
-            {l.label}
+            {l.short ? (
+              <>
+                <span className="hidden sm:inline">{l.label}</span>
+                <span className="sm:hidden">{l.short}</span>
+              </>
+            ) : (
+              l.label
+            )}
           </Link>
         ))}
         <div className="ml-auto flex items-center gap-2">
           <ModePill health={health} down={down} />
+          <Link
+            href="/account"
+            className={`btn btn-sm ${path === "/account" ? "btn-ghost" : "btn-quiet"}`}
+            title={user ? `Signed in as ${user}` : "Optional account to save your trusted contact"}
+          >
+            <UserRound size={15} aria-hidden />
+            <span className="hidden max-w-28 truncate sm:inline">{user ?? "Sign in"}</span>
+          </Link>
           <button onClick={quickExit} className="btn btn-ghost btn-sm" title="Leave this site immediately and clear this session">
             <LogOut size={15} aria-hidden />
             <span className="hidden sm:inline">Quick exit</span>

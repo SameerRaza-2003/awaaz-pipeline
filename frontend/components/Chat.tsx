@@ -487,7 +487,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
                 <ShieldCheck size={16} className="mt-0.5 shrink-0 text-ink-2" aria-hidden />
                 <div>
                   <dt className="font-medium">Your privacy</dt>
-                  <dd className="text-ink-2">No account, no name needed. Your details only ever go to the police, never to the public. Quick exit leaves instantly.</dd>
+                  <dd className="text-ink-2">No account required. Your details only ever go to the police, never to the public. Quick exit leaves instantly.</dd>
                 </div>
               </div>
             </dl>

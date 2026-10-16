@@ -37,6 +37,7 @@ export type SessionInfo = {
   country: string;
   locale: string;
   trusted_contact: { name: string; phone: string | null; has_discord?: boolean; is_default?: boolean } | null;
+  signed_in?: boolean;
   transcript: { role: "user" | "assistant"; text: string }[];
   drafts: Drafts | null;
   receipt: Receipt | null;
@@ -64,7 +65,9 @@ export class ApiError extends Error {
 export async function api<T = any>(path: string, opts: { method?: string; body?: unknown; token?: string } = {}): Promise<T> {
   const headers: Record<string, string> = {};
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
-  if (opts.token) headers["Authorization"] = `Bearer ${opts.token}`;
+  // Police calls pass their own token; everything else carries her account token when she is signed in.
+  const token = opts.token ?? (path.startsWith("/api/police") ? null : auth.token());
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${API}${path}`, {
     method: opts.method || (opts.body !== undefined ? "POST" : "GET"),
     headers,
@@ -104,6 +107,42 @@ export const store = {
 export function quickExit() {
   try {
     sessionStorage.clear();
+    localStorage.removeItem(AUTH_KEY);
   } catch {}
   window.location.replace("https://www.google.com/search?q=weather");
 }
+
+// ---------------- optional survivor account ----------------
+const AUTH_KEY = "awaaz_user";
+
+type AuthState = { token: string; username: string };
+
+export const auth = {
+  get(): AuthState | null {
+    try {
+      const raw = sessionStorage.getItem(AUTH_KEY) ?? localStorage.getItem(AUTH_KEY);
+      return raw ? (JSON.parse(raw) as AuthState) : null;
+    } catch {
+      return null;
+    }
+  },
+  token(): string | null {
+    return auth.get()?.token ?? null;
+  },
+  /** Remembered only for this tab unless she chooses "remember me" (safer on a shared phone). */
+  set(state: AuthState, remember: boolean) {
+    try {
+      (remember ? localStorage : sessionStorage).setItem(AUTH_KEY, JSON.stringify(state));
+      sessionStorage.removeItem("awaaz_session"); // the next session is linked to the account
+      window.dispatchEvent(new Event("awaaz-auth"));
+    } catch {}
+  },
+  clear() {
+    try {
+      sessionStorage.removeItem(AUTH_KEY);
+      localStorage.removeItem(AUTH_KEY);
+      sessionStorage.removeItem("awaaz_session");
+      window.dispatchEvent(new Event("awaaz-auth"));
+    } catch {}
+  },
+};

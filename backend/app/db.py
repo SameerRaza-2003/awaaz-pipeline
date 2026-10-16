@@ -53,6 +53,19 @@ class SessionRow(Base):
     # Encrypted working state for the live session: transcript, slots, drafts.
     intake_json_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
     purged_at: Mapped[datetime | None] = mapped_column(TZDateTime, nullable=True)
+    user_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)  # set when she is signed in
+
+
+class UserRow(Base):
+    """Optional survivor account: a username and password only, no email or real name."""
+
+    __tablename__ = "users"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    username: Mapped[str] = mapped_column(String, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(TZDateTime, default=utcnow)
+    # Encrypted: display name, trusted contact (name, phone, Discord webhook), country, language.
+    profile_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class TrustedContact(Base):

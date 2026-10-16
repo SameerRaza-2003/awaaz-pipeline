@@ -13,6 +13,7 @@ export function SetupDrawer({ sessionId, open, onClose }: { sessionId: string; o
   const [locale, setLocale] = useState("en");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -21,6 +22,7 @@ export function SetupDrawer({ sessionId, open, onClose }: { sessionId: string; o
       .then((s) => {
         setCountry(s.country);
         setLocale(s.locale);
+        setSignedIn(!!s.signed_in);
         if (s.trusted_contact) {
           setName(s.trusted_contact.name);
           setPhone(s.trusted_contact.phone || "");
@@ -99,6 +101,23 @@ export function SetupDrawer({ sessionId, open, onClose }: { sessionId: string; o
           <fieldset className="space-y-3">
             <legend className="mb-1 text-sm font-semibold">Trusted contact</legend>
             <p className="text-xs text-muted">If you press “Yes, I need help”, this person gets your location and live updates.</p>
+            {signedIn ? (
+              <p className="rounded-lg bg-accent-soft p-2.5 text-xs text-accent">
+                Your account&apos;s saved contact is used. Changes here apply to this session only;{" "}
+                <a href="/account" className="underline underline-offset-2">
+                  edit your account
+                </a>{" "}
+                to change it permanently.
+              </p>
+            ) : (
+              <p className="rounded-lg bg-surface-2 p-2.5 text-xs text-ink-2">
+                Tired of entering this every time?{" "}
+                <a href="/account" className="underline underline-offset-2">
+                  Create a free account
+                </a>{" "}
+                to save it. No email needed.
+              </p>
+            )}
             <label className="block space-y-1">
               <span className="text-xs font-medium text-ink-2">Name</span>
               <input className="field" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />

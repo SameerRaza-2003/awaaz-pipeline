@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func, select
 
 from app import db, llm
+from app.api import accounts as accounts_api
 from app.api import report as report_api
 from app.api import sessions as sessions_api
 from app.config import get_settings
@@ -50,6 +51,7 @@ def create_app(with_lifespan: bool = True) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.include_router(accounts_api.router)
     app.include_router(sessions_api.router)
     app.include_router(report_api.router)
     app.include_router(report_api.demo_router())
