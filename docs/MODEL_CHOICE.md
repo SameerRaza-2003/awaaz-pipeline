@@ -46,7 +46,7 @@ The whole eval cost $0.097. The other candidates were not needed, since the chea
 stopped during `gemini-2.5-flash-lite` at the 50-minute limit.
 
 Notes:
-- Slowest single agent run was 138 s (a run that hit the 45 s timeout and was retried). The emergency agents use shorter
+- Slowest single agent run was 138 s, most likely a run that timed out and was retried (`AGENT_TIMEOUT_S=45`, up to 2 retries). The emergency agents use shorter
   timeouts (20 s / 30 s) and fall back to the fixed template, so alerts are never held up by this.
 - Two fixes came out of the first runs: the intake prompt now asks exactly one question per reply, and community matching
   uses `MATCH_THRESHOLD=0.50` plus `MATCH_MARGIN=0.05` (with bge-m3, unrelated communities scored up to 0.54).
