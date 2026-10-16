@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { AgentCard } from "@/lib/workflow";
 
@@ -7,11 +8,19 @@ function Json({ value }: { value: unknown }) {
   if (value === undefined) return null;
   const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
   return (
-    <pre className="mt-1 max-h-48 overflow-auto rounded-md bg-surface-2 p-2 font-mono text-[11px] leading-snug whitespace-pre-wrap break-words">
+    <pre className="scroll-thin mt-1 max-h-56 overflow-auto rounded-md bg-surface-2 p-2.5 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words text-ink-2">
       {text}
     </pre>
   );
 }
+
+const STATUS: Record<string, string> = {
+  running: "bg-run-soft text-run",
+  done: "bg-ok-soft text-ok",
+  error: "bg-danger-soft text-danger",
+};
+
+const pretty = (s: string) => s.replaceAll("_", " ").replace(/^\w/, (c) => c.toUpperCase());
 
 export function AgentConsole({ cards, focus }: { cards: AgentCard[]; focus?: string | null }) {
   const refs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -28,86 +37,93 @@ export function AgentConsole({ cards, focus }: { cards: AgentCard[]; focus?: str
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-wrap gap-x-4 gap-y-1 border-b border-line px-3 py-2 text-sm">
-        <span>
-          <strong>{cards.length}</strong> agent runs
-        </span>
-        <span>
-          tokens <strong>{total.tin.toLocaleString()}</strong> in / <strong>{total.tout.toLocaleString()}</strong> out
-        </span>
-        <span>
-          cost <strong>${total.cost.toFixed(5)}</strong>
-        </span>
-      </div>
-      <div className="flex-1 space-y-3 overflow-auto p-3">
-        {cards.length === 0 && <p className="text-muted text-sm">Agents will appear here as they run.</p>}
+      <dl className="grid grid-cols-3 border-b border-line text-sm">
+        {[
+          ["Agent runs", String(cards.length)],
+          ["Tokens", `${(total.tin + total.tout).toLocaleString()}`],
+          ["Cost", `$${total.cost.toFixed(4)}`],
+        ].map(([k, v]) => (
+          <div key={k} className="border-r border-line px-4 py-2.5 last:border-r-0">
+            <dt className="label">{k}</dt>
+            <dd className="font-mono text-[15px]">{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="scroll-thin min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+        {cards.length === 0 && <p className="p-2 text-sm text-muted">Each agent appears here when it runs, with every tool call, its arguments and results.</p>}
         {cards.map((c) => (
           <div
             key={c.run_id}
             ref={(el) => {
               refs.current[c.run_id] = el;
             }}
-            className={`card p-3 ${focus === c.node ? "ring-2 ring-run" : ""}`}
+            className={`card overflow-hidden ${focus === c.node ? "ring-2 ring-run/60" : ""}`}
           >
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-semibold">{c.agent.replaceAll("_", " ")}</span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                  c.status === "running" ? "bg-run-soft text-run" : c.status === "done" ? "bg-ok-soft text-ok" : "bg-danger-soft text-danger"
-                }`}
-              >
-                {c.status}
-              </span>
+            <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2.5">
+              <span className="text-sm font-semibold">{pretty(c.agent)}</span>
+              <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${STATUS[c.status]}`}>{c.status}</span>
               <span className="ml-auto font-mono text-[11px] text-muted">{c.model}</span>
             </div>
-            <div className="mt-1 text-[12px] text-muted">
-              tools: {c.tools.join(", ") || "—"} · {c.tokens_in + c.tokens_out} tokens · ${c.cost_usd.toFixed(5)}
+            <div className="px-4 py-2 text-[11px] text-muted">
+              Tools: <span className="font-mono">{c.tools.join(", ") || "none"}</span>
+              {" · "}
+              {(c.tokens_in + c.tokens_out).toLocaleString()} tokens · ${c.cost_usd.toFixed(5)}
             </div>
             {c.calls.length > 0 && (
-              <ol className="mt-2 space-y-2">
+              <ol className="space-y-1.5 px-4 pb-3">
                 {c.calls.map((t, i) => (
-                  <li key={i} className="rounded-lg border border-line p-2">
-                    <div className="flex items-center gap-2 text-[13px]">
-                      <span className="font-mono font-semibold">{t.tool}()</span>
-                      {t.duration_ms !== undefined && <span className="text-[11px] text-muted">{t.duration_ms} ms</span>}
-                      {t.result === undefined && !t.error && <span className="text-[11px] text-run">running…</span>}
-                    </div>
-                    {t.args !== undefined && Object.keys(t.args || {}).length > 0 && (
-                      <details>
-                        <summary className="cursor-pointer text-[11px] text-muted">arguments</summary>
-                        <Json value={t.args} />
-                      </details>
-                    )}
-                    {t.error ? (
-                      <div className="mt-1 text-[12px] text-danger">{t.error}</div>
-                    ) : (
-                      t.result !== undefined && (
-                        <details open>
-                          <summary className="cursor-pointer text-[11px] text-muted">result</summary>
-                          <Json value={t.result} />
-                        </details>
-                      )
-                    )}
+                  <li key={i} className="rounded-lg border border-line">
+                    <details open={i === c.calls.length - 1}>
+                      <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-[13px]">
+                        <ChevronRight size={13} className="shrink-0 text-muted transition-transform [details[open]_&]:rotate-90" />
+                        <span className="font-mono font-medium">{t.tool}</span>
+                        {t.error ? (
+                          <span className="text-[11px] text-danger">error</span>
+                        ) : t.result === undefined ? (
+                          <span className="text-[11px] text-run">running</span>
+                        ) : null}
+                        {t.duration_ms !== undefined && <span className="ml-auto font-mono text-[11px] text-muted">{t.duration_ms} ms</span>}
+                      </summary>
+                      <div className="space-y-2 border-t border-line px-3 py-2">
+                        {t.args !== undefined && Object.keys(t.args || {}).length > 0 && (
+                          <div>
+                            <div className="label">Arguments</div>
+                            <Json value={t.args} />
+                          </div>
+                        )}
+                        {t.error ? (
+                          <p className="text-[12px] text-danger">{t.error}</p>
+                        ) : (
+                          t.result !== undefined && (
+                            <div>
+                              <div className="label">Result</div>
+                              <Json value={t.result} />
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </details>
                   </li>
                 ))}
               </ol>
             )}
             {c.messages.length > 0 && (
-              <div className="mt-2 space-y-1">
+              <div className="space-y-1 border-t border-line px-4 py-2.5">
+                <div className="label">Model messages</div>
                 {c.messages.map((m, i) => (
                   <p key={i} className="text-[12px] text-ink-2" dir="auto">
-                    💬 {m}
+                    {m}
                   </p>
                 ))}
               </div>
             )}
             {c.output !== undefined && (
-              <details className="mt-2">
-                <summary className="cursor-pointer text-[12px] font-semibold">output</summary>
+              <details className="border-t border-line px-4 py-2.5">
+                <summary className="label cursor-pointer">Output</summary>
                 <Json value={c.output} />
               </details>
             )}
-            {c.error && <p className="mt-2 text-[12px] text-danger">{c.error}</p>}
+            {c.error && <p className="border-t border-line px-4 py-2.5 text-[12px] text-danger">{c.error}</p>}
           </div>
         ))}
       </div>

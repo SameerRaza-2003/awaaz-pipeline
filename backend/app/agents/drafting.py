@@ -103,4 +103,5 @@ drafting_agent = AgentSpec(
     build_tools=_tools,
     output_schema=DraftingDone,
     recursion_limit=24,
+    timeout_s=150,  # draft, scan, privacy review and rewrites take several model calls
 )

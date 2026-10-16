@@ -1,5 +1,6 @@
 "use client";
 
+import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -7,9 +8,34 @@ import { api, Health, quickExit } from "@/lib/api";
 
 const LINKS = [
   { href: "/", label: "Home" },
-  { href: "/about", label: "About" },
+  { href: "/about", label: "How it works" },
   { href: "/police", label: "Police" },
 ];
+
+function ModePill({ health, down }: { health: Health | null; down: boolean }) {
+  if (down)
+    return (
+      <span className="rounded-full bg-danger-soft px-2.5 py-1 text-xs font-medium text-danger" role="alert">
+        Server unreachable · call 15
+      </span>
+    );
+  if (!health) return null;
+  const label = health.outbound_mode === "live" ? "Live" : health.outbound_mode === "sandbox" ? "Sandbox" : "Dry run";
+  const tone = health.outbound_mode === "live" ? "bg-ok-soft text-ok" : "bg-warn-soft text-warn";
+  const title =
+    health.outbound_mode === "dry_run"
+      ? "Nothing is sent to real people"
+      : health.outbound_mode === "sandbox"
+        ? "Messages only go to allow-listed test recipients"
+        : "Messages are sent to real recipients";
+  return (
+    <span className={`hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex ${tone}`} title={title}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {label}
+      {!health.llm_configured && " · no AI key"}
+    </span>
+  );
+}
 
 export function Nav() {
   const path = usePathname();
@@ -23,37 +49,31 @@ export function Nav() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 bg-bg/95 backdrop-blur border-b border-line">
-      {health && health.outbound_mode !== "live" && (
-        <div className="bg-warn-soft text-warn text-sm px-4 py-1.5 text-center" role="status">
-          <strong>Demo mode ({health.outbound_mode === "dry_run" ? "dry run" : "sandbox"}):</strong>{" "}
-          {health.outbound_mode === "dry_run"
-            ? "nothing is sent to real people."
-            : "messages go only to allow-listed test numbers and inboxes."}
-          {!health.llm_configured && " LLM key not set: agents fall back to fixed templates."}
-        </div>
-      )}
-      {down && (
-        <div className="bg-danger-soft text-danger text-sm px-4 py-1.5 text-center" role="alert">
-          Cannot reach the Awaaz server. In an emergency call 15 (Police) or 1122 (Rescue).
-        </div>
-      )}
-      <nav className="mx-auto max-w-[1500px] flex items-center gap-2 px-4 h-14">
-        <Link href="/" className="font-bold text-lg tracking-tight text-accent mr-1 sm:mr-4">
-          Awaaz <span className="font-normal text-muted text-sm hidden sm:inline">آواز</span>
+    <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur">
+      <nav className="mx-auto flex h-14 max-w-[1560px] items-center gap-1 px-3 sm:px-5">
+        <Link href="/" className="mr-3 flex items-baseline gap-2 sm:mr-6">
+          <span className="text-[1.05rem] font-semibold tracking-tight">Awaaz</span>
+          <span className="urdu hidden text-sm leading-none text-muted sm:inline">آواز</span>
         </Link>
         {LINKS.map((l) => (
           <Link
             key={l.href}
             href={l.href}
-            className={`px-3 py-2 rounded-lg text-sm ${path === l.href ? "bg-surface-2 font-semibold" : "text-ink-2 hover:bg-surface-2"}`}
+            className={`rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+              path === l.href ? "bg-surface-3 font-medium text-ink" : "text-ink-2 hover:bg-surface-2"
+            }`}
           >
             {l.label}
           </Link>
         ))}
-        <button onClick={quickExit} className="ml-auto btn btn-ghost !min-h-9 !py-1.5 text-sm whitespace-nowrap" title="Leave this site immediately">
-          <span className="hidden sm:inline">Quick exit</span><span className="sm:hidden">Exit</span> ✕
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <ModePill health={health} down={down} />
+          <button onClick={quickExit} className="btn btn-ghost btn-sm" title="Leave this site immediately and clear this session">
+            <LogOut size={15} aria-hidden />
+            <span className="hidden sm:inline">Quick exit</span>
+            <span className="sm:hidden">Exit</span>
+          </button>
+        </div>
       </nav>
     </header>
   );

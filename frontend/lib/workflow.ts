@@ -5,16 +5,16 @@ export type NodeStatus = "idle" | "running" | "waiting" | "done" | "error" | "sk
 export const NODES: { id: string; label: string; kind: "gate" | "agent" | "human" | "timer"; lane: string }[] = [
   { id: "danger_gate", label: "Danger check", kind: "gate", lane: "start" },
   { id: "location_agent", label: "Location Agent", kind: "agent", lane: "emergency" },
-  { id: "twilio_agent", label: "Twilio Agent", kind: "agent", lane: "emergency" },
+  { id: "twilio_agent", label: "Alert Agent", kind: "agent", lane: "emergency" },
   { id: "intake_agent", label: "Intake Agent", kind: "agent", lane: "report" },
   { id: "drafting_agent", label: "Drafting Agent", kind: "agent", lane: "report" },
   { id: "user_review", label: "Your review", kind: "human", lane: "report" },
   { id: "police_dispatch_agent", label: "Police Dispatch Agent", kind: "agent", lane: "police" },
   { id: "matching_agent", label: "Matching Agent", kind: "agent", lane: "public" },
-  { id: "gmail_communities", label: "Gmail Agent · communities", kind: "agent", lane: "public" },
-  { id: "escalation_timer", label: "Escalation timer", kind: "timer", lane: "police" },
+  { id: "gmail_communities", label: "Email · activist groups", kind: "agent", lane: "public" },
+  { id: "escalation_timer", label: "24-hour timer", kind: "timer", lane: "police" },
   { id: "police_status_agent", label: "Police Status Agent", kind: "agent", lane: "police" },
-  { id: "gmail_news", label: "Gmail Agent · news", kind: "agent", lane: "police" },
+  { id: "gmail_news", label: "Email · news outlets", kind: "agent", lane: "police" },
 ];
 
 export const EDGES: [string, string][] = [

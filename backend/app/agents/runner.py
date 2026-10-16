@@ -187,6 +187,7 @@ class AgentSpec:
     output_schema: type[BaseModel] | None = None
     node: str | None = None
     recursion_limit: int = 30
+    timeout_s: float | None = None  # overrides AGENT_TIMEOUT_S for agents that need several model calls
 
 
 TRANSIENT = ("RateLimitError", "APIConnectionError", "APITimeoutError", "InternalServerError", "ServiceUnavailable")
@@ -230,7 +231,7 @@ class AgentRunner:
         output_tool = spec.output_schema.__name__ if spec.output_schema else None
         handler = EventCallbackHandler(ctx, model_name, output_tool, also)
         last_error: BaseException | None = None
-        timeout = timeout_s or s.agent_timeout_s
+        timeout = timeout_s or spec.timeout_s or s.agent_timeout_s
         attempts = 1 + max(0, s.agent_max_retries)
         result: dict[str, Any] | None = None
         for attempt in range(attempts):

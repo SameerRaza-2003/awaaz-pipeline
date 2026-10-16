@@ -8,6 +8,7 @@
 """
 
 import asyncio
+import contextvars
 import json
 import time
 import uuid
@@ -45,15 +46,17 @@ EXTRACT_PROMPT = """You protect harassment survivors' privacy. From the case bel
 a real person if published: personal names (also partial names and nicknames, in any script), phone numbers, emails,
 social-media handles, ID/CNIC numbers, vehicle registration or plate numbers, house/street addresses, names of companies,
 schools, shops or other organisations, job titles that are rare enough to identify someone, and any other unique detail.
-Copy each value exactly as written. Never list cities, provinces, countries, dates, or generic roles like "manager" or
-"a student": the public text is allowed to say the city.
+Copy each value exactly as written. Only list NAMED or SPECIFIC things: "Zenith Textiles" yes, "the university" or "an office"
+no. Never list cities, provinces, countries, dates, generic places or roles like "manager" or "a student": the public text is
+allowed to say the city and to describe places generically.
 """ + DATA_GUARD
 
 REVIEW_PROMPT = """You are a strict privacy reviewer for a public post about a harassment case. List every detail in the text that
 could identify the survivor, the accused or a witness: names or initials, numbers (phone, ID, plate, room), handles,
 specific organisation names, street-level locations, rare job titles, or unique events. City-level places, dates,
 generic roles ("a senior colleague", "a private company in Lahore") and neutral descriptions of conduct are fine.
-Set clean=true only if there is nothing identifying.
+Saying that evidence exists ("she noted the plate number", "she has screenshots") is fine; only the actual values
+(the number itself, the account name) are identifying. Set clean=true only if there is nothing identifying.
 """ + DATA_GUARD
 
 
@@ -63,7 +66,9 @@ def enabled() -> bool:
 
 async def _structured(schema: type[BaseModel], system: str, user: str, timeout: float) -> BaseModel:
     model = get_chat_model(AGENT).with_structured_output(schema, method="function_calling")
-    return await asyncio.wait_for(model.ainvoke([("system", system), ("user", user)]), timeout=timeout)
+    # Fresh context: when called from inside an agent's tool, do not inherit that agent's callbacks.
+    task = asyncio.create_task(model.ainvoke([("system", system), ("user", user)]), context=contextvars.Context())
+    return await asyncio.wait_for(task, timeout=timeout)
 
 
 async def _emit(session_id: str, kind: str, run_id: str, data: dict[str, Any]) -> None:

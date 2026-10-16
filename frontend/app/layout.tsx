@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Nastaliq_Urdu, Inter, JetBrains_Mono } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, Noto_Nastaliq_Urdu } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
 
-const sans = Inter({ variable: "--font-sans-stack", subsets: ["latin"] });
-const mono = JetBrains_Mono({ variable: "--font-mono-stack", subsets: ["latin"] });
+const sans = IBM_Plex_Sans({ variable: "--font-plex-sans", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const mono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500"] });
 const urdu = Noto_Nastaliq_Urdu({ variable: "--font-urdu", subsets: ["arabic"], weight: ["400", "600"] });
 
 export const metadata: Metadata = {
@@ -15,15 +15,19 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#2f5d50",
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f2ed" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e1012" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable} ${urdu.variable} h-full`}>
-      <body className="min-h-full flex flex-col">
+    <html lang="en" className={`${sans.variable} ${mono.variable} ${urdu.variable}`}>
+      <body className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
         <Nav />
-        <main className="flex-1 flex flex-col">{children}</main>
+        <main className="flex min-h-0 flex-1 flex-col">{children}</main>
       </body>
     </html>
   );

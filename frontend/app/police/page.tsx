@@ -177,7 +177,7 @@ export default function PolicePage() {
     );
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-4 p-3 sm:p-4">
+    <div className="scroll-thin mx-auto min-h-0 w-full max-w-[1560px] flex-1 space-y-4 overflow-y-auto p-3 sm:p-4">
       <div className="card flex items-center gap-3 overflow-hidden px-4 py-2" aria-live="polite">
         <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted">Live activity</span>
         <div className="flex min-w-0 flex-1 gap-4 overflow-x-auto whitespace-nowrap text-sm">
