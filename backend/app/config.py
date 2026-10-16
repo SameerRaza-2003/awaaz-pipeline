@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     alert_authorities: bool = False
     authority_number: str = ""
     default_trusted_contact: str = ""
+    default_discord_webhook: str = ""  # used when a session has not set its own trusted contact webhook
 
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"

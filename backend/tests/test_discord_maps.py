@@ -88,3 +88,14 @@ async def test_geocoder_falls_back_and_never_raises(monkeypatch):
 def test_short_address():
     body = {"display_name": "long", "address": {"road": "Gurumangat Road", "suburb": "Gulberg", "city": "Lahore"}}
     assert maps._short_address(body) == "Gurumangat Road, Gulberg, Lahore"
+
+
+async def test_default_discord_webhook_from_env(monkeypatch):
+    monkeypatch.setenv("DEFAULT_DISCORD_WEBHOOK", WEBHOOK)
+    get_settings.cache_clear()
+    monkeypatch.setattr(maps, "reverse_geocode", lambda lat, lng: asyncio.sleep(0, {"address": None}))
+    llm.set_model_override(lambda name: ScriptedChatModel(script=[RuntimeError("LLM down")]))
+    sid = (await sessions.create_session()).id  # no Setup at all
+    await emergency.start(sid, {"lat": 33.68, "lng": 73.04}, None)
+    await asyncio.gather(*list(emergency._tasks))
+    assert [r.recipient for r in await _rows("discord")] == ["discord:123456789012345678"]

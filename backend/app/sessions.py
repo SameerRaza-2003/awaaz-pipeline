@@ -105,4 +105,6 @@ async def get_trusted_contact(session_id: str) -> tuple[str, str | None] | None:
 async def get_contact_discord(session_id: str) -> str | None:
     """The trusted contact's Discord webhook URL (stored encrypted: it contains a secret token)."""
     row = await _latest_contact(session_id)
-    return decrypt(row.discord_webhook_enc) if row and row.discord_webhook_enc else None
+    if row and row.discord_webhook_enc:
+        return decrypt(row.discord_webhook_enc)
+    return get_settings().default_discord_webhook.strip() or None
