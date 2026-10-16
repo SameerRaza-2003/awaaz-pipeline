@@ -114,7 +114,14 @@ def serialize(row: EventRow) -> dict[str, Any]:
 class EventBus:
     def __init__(self) -> None:
         self._subs: dict[str, set[asyncio.Queue]] = defaultdict(set)
-        self._lock = asyncio.Lock()
+        self._lock: asyncio.Lock | None = None
+        self._loop: asyncio.AbstractEventLoop | None = None
+
+    def _get_lock(self) -> asyncio.Lock:
+        loop = asyncio.get_running_loop()
+        if self._lock is None or self._loop is not loop:
+            self._lock, self._loop = asyncio.Lock(), loop
+        return self._lock
 
     async def publish(
         self,
@@ -128,7 +135,7 @@ class EventBus:
         also: tuple[str, ...] = (),
     ) -> dict[str, Any]:
         payload = mask(_jsonable(data or {}))
-        async with self._lock:
+        async with self._get_lock():
             async with SessionLocal() as db:
                 row = EventRow(
                     session_id=session_id,

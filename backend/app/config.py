@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     police_demo_password: str = "awaaz-demo"
     enable_demo_routes: bool = True
     default_country: str = "PK"
+    seed_email_base: str = ""
+    police_api_url: str = ""  # empty = call the in-process police service over ASGI
 
     data_dir: Path = ROOT / "backend" / "data"
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
