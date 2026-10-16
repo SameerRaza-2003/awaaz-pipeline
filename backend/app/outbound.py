@@ -176,6 +176,19 @@ def twiml_say(text: str) -> str:
     return f"<Response>{say}<Pause length=\"1\"/>{say}</Response>"
 
 
+def provider_configured(kind: str) -> bool:
+    s = get_settings()
+    if kind == "sms":
+        return bool(s.twilio_account_sid and s.twilio_auth_token and s.twilio_from_number)
+    if kind == "call":
+        if s.call_provider == "macrodroid":
+            return bool(s.macrodroid_call_endpoint)
+        return bool(s.twilio_account_sid and s.twilio_auth_token and s.twilio_from_number)
+    if kind in ("community_email", "news_email"):
+        return bool(s.smtp_user and s.smtp_app_password)
+    return True  # discord: the webhook itself is the configuration
+
+
 def is_valid_recipient(kind: str, recipient: str) -> bool:
     if kind == "discord":
         return recipient.startswith("discord:") and recipient[8:].isdigit()
@@ -217,6 +230,9 @@ class OutboundGuard:
             res = DispatchResult(to, kind, "dry_run", provider_id=f"dry_{uuid.uuid4().hex[:12]}", mode=mode)
         elif mode == "sandbox" and to not in s.allowlist and not (kind == "discord" and "discord:*" in s.allowlist):
             res = DispatchResult(to, kind, "blocked", error="recipient not in OUTBOUND_ALLOWLIST", mode=mode)
+        elif not provider_configured(kind):
+            # Not an error: this channel simply is not set up on this server.
+            res = DispatchResult(to, kind, "skipped", error=f"no {kind} provider configured", mode=mode)
         else:
             res = await self._send(kind, to, payload, mode)
 

@@ -121,6 +121,8 @@ async def test_sandbox_blocks_non_allowlisted(monkeypatch):
 async def test_sandbox_sends_to_allowlisted(monkeypatch):
     monkeypatch.setenv("OUTBOUND_MODE", "sandbox")
     monkeypatch.setenv("OUTBOUND_ALLOWLIST", CONTACT)
+    for k in ("TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER"):
+        monkeypatch.setenv(k, "test")
     get_settings.cache_clear()
     sent = []
 
@@ -138,6 +140,8 @@ async def test_sandbox_sends_to_allowlisted(monkeypatch):
 
 async def test_live_failure_retries_and_logs(monkeypatch):
     monkeypatch.setenv("OUTBOUND_MODE", "live")
+    monkeypatch.setenv("SMTP_USER", "test@example.org")
+    monkeypatch.setenv("SMTP_APP_PASSWORD", "test")
     get_settings.cache_clear()
     monkeypatch.setattr(outbound, "RETRY_BASE_DELAY_S", 0)
     calls = []
@@ -179,3 +183,13 @@ def test_mask_phone():
 
 def test_discord_id_is_not_masked_as_phone():
     assert mask_phone("discord:1560736918616936665") == "discord:1560736918616936665"
+
+
+async def test_unconfigured_channel_is_skipped_not_failed(monkeypatch):
+    monkeypatch.setenv("OUTBOUND_MODE", "live")
+    monkeypatch.setenv("TWILIO_ACCOUNT_SID", "")
+    get_settings.cache_clear()
+    res = await outbound.guard.dispatch(kind="sms", key="k9", recipient=CONTACT, session_id="s9", payload={"body": "hello there"})
+    assert res.status == "skipped"
+    hist = await bus.history("s9")
+    assert not any(e["kind"] == "error" for e in hist)

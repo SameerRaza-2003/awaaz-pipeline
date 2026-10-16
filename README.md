@@ -46,14 +46,15 @@ Requirements: Python 3.12 with [uv](https://docs.astral.sh/uv/), Node 20+.
 ```bash
 cp .env.example .env          # fill in what you have; everything defaults to safe dry-run mode
 make install
-make dev                      # backend on :8000, frontend on :3000
+make dev                      # backend on :8000, frontend on https://localhost:3000 (and your LAN IP)
 ```
 
-Open http://localhost:3000.
+Open https://localhost:3000 and accept the self-signed certificate warning once.
 
-**On your phone** (same Wi-Fi): run `make dev-phone` instead, open `https://<your computer's IP>:3000` (e.g. `https://192.168.18.120:3000`)
-and accept the certificate warning once. HTTPS is needed because phones only share GPS location with secure pages; plain
-`make dev` also works from a phone at `http://<IP>:3000`, but the danger button then falls back to typed location.
+**On your phone** (same Wi-Fi): open `https://<your computer's IP>:3000` (e.g. `https://192.168.18.120:3000`) and accept the
+certificate warning once. HTTPS is needed because phones only share GPS location with secure pages (`make dev-http` serves
+plain http if you need it, but then the danger button falls back to typed location).
+Channels that are not configured (for example SMS without a provider) show "Not set up" instead of failing.
 The frontend forwards `/api` to the backend, so the backend stays on localhost and only port 3000 needs to be reachable. The police dashboard is at `/police` (demo login from `POLICE_DEMO_USER` / `POLICE_DEMO_PASSWORD`, default `officer` / `awaaz-demo`).
 
 Without an `OPENROUTER_API_KEY` the app still works end to end on its deterministic fallbacks: the alert and call go out from a fixed template, the interview uses fixed questions, the police complaint is built from the answers, and the public report is held back because no clean public draft can be confirmed.

@@ -403,7 +403,7 @@ async def send_emails(session_id: str, mode: str, work: dict[str, Any], recipien
     kind = "community_email" if mode == "communities" else "news_email"
     async with SessionLocal() as db:
         rows = (await db.scalars(select(DispatchLog).where(DispatchLog.public_ref == work["public_ref"], DispatchLog.kind == kind))).all()
-    done = {r.recipient for r in rows if r.status in ("sent", "dry_run", "blocked", "pending")}
+    done = {r.recipient for r in rows if r.status in ("sent", "dry_run", "blocked", "skipped", "pending")}
     subject, body = template_email(mode, work["public_ref"], work["public_text"], filed_on)
     for r in recipients:
         to = normalize_recipient(r["email"])

@@ -232,7 +232,7 @@ async def ensure_alert_sent(session_id, key, name, report, sms_to, call_to, disc
     """Check dispatch_log and fill every gap with the fixed template. Idempotent by construction."""
     async with SessionLocal() as db:
         rows = (await db.scalars(select(DispatchLog).where(DispatchLog.public_ref == key))).all()
-    done = {(r.kind, r.recipient) for r in rows if r.status in ("sent", "dry_run", "blocked", "pending")}
+    done = {(r.kind, r.recipient) for r in rows if r.status in ("sent", "dry_run", "blocked", "skipped", "pending")}
     body = template_sms(name, report)
     for to in sms_to:
         if ("sms", to) not in done:
