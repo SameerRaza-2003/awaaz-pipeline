@@ -1,4 +1,4 @@
-.PHONY: install dev backend frontend test lint e2e eval eval-quick matching-eval seed demo-reset
+.PHONY: install dev dev-phone backend frontend frontend-https test lint e2e eval eval-quick matching-eval seed demo-reset
 
 install:
 	cd backend && uv sync
@@ -8,10 +8,18 @@ backend:
 	cd backend && uv run uvicorn app.main:app --reload --port 8000
 
 frontend:
-	cd frontend && npm run dev
+	cd frontend && npx next dev -H 0.0.0.0
 
 dev:
 	$(MAKE) -j2 backend frontend
+
+# Same, but HTTPS with a self-signed certificate: phones only share GPS location over HTTPS.
+# Open https://<this computer's IP>:3000 on the phone and accept the certificate warning once.
+dev-phone:
+	$(MAKE) -j2 backend frontend-https
+
+frontend-https:
+	cd frontend && npx next dev --experimental-https -H 0.0.0.0
 
 test:
 	cd backend && uv run pytest -q

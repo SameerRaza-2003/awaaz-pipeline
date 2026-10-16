@@ -1,4 +1,5 @@
-export const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Empty = same origin: Next.js forwards /api to the backend (works from phones on the LAN too).
+export const API = process.env.NEXT_PUBLIC_API_URL || "";
 
 export type AwaazEvent = {
   id: number;
