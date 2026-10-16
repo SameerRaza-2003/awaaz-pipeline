@@ -171,7 +171,6 @@ async def run(session_id: str, emergency_id: int) -> dict[str, Any]:
             location_agent,
             session_id=session_id,
             messages="Prepare the location report for this emergency now.",
-            timeout_s=min(s.agent_timeout_s, 20),
         )
         report = _validated_report(res.output, truth)
     except AgentFailed:
@@ -201,7 +200,6 @@ async def run(session_id: str, emergency_id: int) -> dict[str, Any]:
                 session_id=session_id,
                 messages=f"Send the emergency alert and place the call.\n{prompt}",
                 state=state,
-                timeout_s=min(s.agent_timeout_s, 30),
             )
             sent = res.output
         except AgentFailed:

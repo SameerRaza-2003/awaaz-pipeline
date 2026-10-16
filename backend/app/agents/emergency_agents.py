@@ -52,11 +52,14 @@ def _location_tools(ctx: RunContext):
     ]
 
 
+# Emergency agents never retry: if the model is slow, the deterministic fallback sends the alert at once.
 location_agent = AgentSpec(
     name="location_agent",
     system_prompt=LOCATION_PROMPT,
     build_tools=_location_tools,
     output_schema=LocationReport,
+    timeout_s=15,
+    max_retries=0,
 )
 
 
@@ -170,4 +173,6 @@ twilio_agent = AgentSpec(
     system_prompt=TWILIO_PROMPT,
     build_tools=_twilio_tools,
     output_schema=AlertResult,
+    timeout_s=25,
+    max_retries=0,
 )

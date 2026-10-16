@@ -106,6 +106,7 @@ async def test_macrodroid_call(monkeypatch):
     monkeypatch.setenv("CALL_PROVIDER", "macrodroid")
     monkeypatch.setenv("MACRODROID_URL", "https://trigger.macrodroid.com/dev123/")
     monkeypatch.setenv("MACRODROID_CALL_URL", "")
+    monkeypatch.setenv("MACRODROID_CALL_ID", "awaaz_call")
     get_settings.cache_clear()
     hits = []
 
