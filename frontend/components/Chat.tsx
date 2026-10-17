@@ -20,7 +20,6 @@ type Props = {
 const LANGS = [
   { id: "en", label: "English", placeholder: "Write your answer" },
   { id: "roman", label: "Roman Urdu", placeholder: "Apna jawab likhein" },
-  { id: "ur", label: "اردو", placeholder: "اپنا جواب لکھیں" },
 ] as const;
 type Lang = (typeof LANGS)[number]["id"];
 
@@ -60,7 +59,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
       const s = await api<SessionInfo>(`/api/sessions/${sessionId}`);
       setSession(s);
       if (s.drafts) setPoliceText((p) => p || s.drafts!.police_text);
-      if (s.locale === "ur" || s.locale === "roman" || s.locale === "en") setLang(s.locale);
+      if (s.locale === "roman" || s.locale === "en") setLang(s.locale);
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) onNewSession();
     }
@@ -382,7 +381,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
   const showHelpShortcut = ["ask_report", "intake", "drafting", "review"].includes(phase) && !helpActive(help);
   const step = STEP[phase];
   const langDef = LANGS.find((l) => l.id === lang) ?? LANGS[0];
-  const urduInput = lang === "ur" || hasUrdu(input);
+  const urduInput = hasUrdu(input);
 
   // ---------------- render ----------------
   return (
@@ -589,10 +588,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
                       role="radio"
                       aria-checked={lang === l.id}
                       onClick={() => chooseLang(l.id)}
-                      lang={l.id === "ur" ? "ur" : undefined}
-                      className={`min-h-9 rounded-sm px-2.5 text-caption font-semibold ${lang === l.id ? "bg-ink text-paper" : "text-ink-2 hover:text-ink"} ${
-                        l.id === "ur" ? "urdu !leading-none" : ""
-                      }`}
+                      className={`min-h-9 rounded-sm px-2.5 text-caption font-semibold ${lang === l.id ? "bg-ink text-paper" : "text-ink-2 hover:text-ink"}`}
                     >
                       {l.label}
                     </button>
@@ -620,7 +616,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
                 <textarea
                   id="composer"
                   ref={composer}
-                  dir={lang === "ur" ? "rtl" : "auto"}
+                  dir="auto"
                   lang={urduInput ? "ur" : undefined}
                   rows={1}
                   className={`field max-h-40 min-h-12 flex-1 resize-none ${urduInput ? "urdu" : ""}`}

@@ -4,7 +4,7 @@ import { LogOut, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api, auth, Health, quickExit } from "@/lib/api";
+import { api, ApiError, auth, Health, quickExit } from "@/lib/api";
 
 function ModeNote({ health }: { health: Health | null }) {
   if (!health || health.outbound_mode === "live") return null;
@@ -38,9 +38,6 @@ function Wordmark({ sub }: { sub?: string }) {
   return (
     <Link href="/" className="mr-2 flex min-h-11 items-center gap-2 sm:mr-6" aria-label="Awaaz home">
       <span className="font-heading text-title font-semibold leading-none tracking-tight">Awaaz</span>
-      <span className="urdu hidden text-small leading-none text-muted sm:inline" lang="ur">
-        آواز
-      </span>
       {sub && <span className="ml-1 border-l border-line pl-3 text-small font-semibold text-ink-2">{sub}</span>}
     </Link>
   );
@@ -55,6 +52,11 @@ export function Nav() {
   useEffect(() => {
     const sync = () => setUser(auth.get()?.username ?? null);
     sync();
+    // A saved token can be stale (account deleted, secret rotated): check it once, drop it if refused.
+    if (auth.token())
+      api("/api/me").catch((e) => {
+        if (e instanceof ApiError && e.status === 401) auth.forget();
+      });
     window.addEventListener("awaaz-auth", sync);
     window.addEventListener("storage", sync);
     return () => {

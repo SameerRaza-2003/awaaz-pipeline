@@ -14,7 +14,7 @@ export function Welcome({ onContinue, onEmergency }: { onContinue: () => void; o
       <div className="flex flex-1 flex-col lg:max-w-xl lg:flex-none">
         <div className="flex flex-1 flex-col justify-center px-5 pb-6 pt-8 sm:px-8 lg:flex-none lg:px-0 lg:pt-0">
           <JaaliWindow className="mb-6 w-20 lg:hidden" />
-          <p className="label">Awaaz · آواز</p>
+          <p className="label">Awaaz</p>
           <h1 className="mt-3 text-display font-semibold sm:text-hero">Help when you need it. A report when you are ready.</h1>
           <p className="mt-4 text-lead text-ink-2">
             Awaaz alerts someone you trust with your location in one tap, or helps you report harassment to the police without exposing who you are.
