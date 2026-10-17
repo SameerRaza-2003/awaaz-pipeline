@@ -151,7 +151,7 @@ async def run(session_id: str, emergency_id: int) -> dict[str, Any]:
             session_id,
             "error",
             node="twilio_agent",
-            data={"message": "No trusted contact configured and DEFAULT_TRUSTED_CONTACT is empty. Add one in Setup.", "warning": True},
+            data={"message": "No trusted contact is set up yet, so no one could be alerted. Add one in Setup.", "warning": True},
         )
     elif not call_to:
         await bus.publish(session_id, "status", node="twilio_agent",
@@ -161,7 +161,7 @@ async def run(session_id: str, emergency_id: int) -> dict[str, Any]:
             session_id,
             "status",
             node="twilio_agent",
-            data={"message": "Using DEFAULT_TRUSTED_CONTACT. Add your own trusted contact in Setup.", "warning": True},
+            data={"message": "Alerting the default emergency contact. Add your own trusted contact in Setup.", "warning": True},
         )
 
     # 1. Location
