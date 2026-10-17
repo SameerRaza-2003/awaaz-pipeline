@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from app import accounts, sessions
 from app.api.accounts import optional_user
 from app.api.sse import event_stream, parse_last_id
-from app.config import get_settings, normalize_recipient
+from app.config import get_settings, normalize_phone, normalize_recipient
 from app.events import bus
 from app.agents.emergency_agents import send_discord
 from app.outbound import discord_recipient, is_valid_recipient
@@ -98,9 +98,12 @@ async def put_settings(session_id: str, body: SettingsIn):
     await require_session(session_id)
     if body.trusted_contact:
         tc = body.trusted_contact
-        phone = normalize_recipient(tc.phone) if tc.phone and tc.phone.strip() else None
-        if phone and not is_valid_recipient("sms", phone):
-            raise HTTPException(422, "phone must be in international format, e.g. +923001234567")
+        sess = await sessions.get_session(session_id)
+        phone = None
+        if tc.phone and tc.phone.strip():
+            phone = normalize_phone(tc.phone, body.country or (sess.country if sess else None))
+            if not phone:
+                raise HTTPException(422, "Enter a valid phone number, e.g. 03001234567 or +923001234567")
         webhook = (tc.discord_webhook or "").strip() or None
         if webhook and not discord_recipient(webhook):
             raise HTTPException(422, "Discord webhook must look like https://discord.com/api/webhooks/<id>/<token>")

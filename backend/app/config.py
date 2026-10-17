@@ -117,12 +117,28 @@ class Settings(BaseSettings):
         return f"sqlite+aiosqlite:///{self.data_dir / 'police.db'}"
 
 
-def normalize_recipient(value: str) -> str:
+def normalize_phone(value: str, country: str | None = None) -> str | None:
+    """Any common way of writing a number (03120051793, 0092 312..., +92 312...) -> E.164, using the
+    person's country for local formats. None if it is not a valid number."""
+    import phonenumbers
+
+    region = (country or get_settings().default_country or "PK").upper()
+    try:
+        n = phonenumbers.parse(value.strip(), region)
+    except phonenumbers.NumberParseException:
+        return None
+    return phonenumbers.format_number(n, phonenumbers.PhoneNumberFormat.E164) if phonenumbers.is_valid_number(n) else None
+
+
+def normalize_recipient(value: str, country: str | None = None) -> str:
     value = value.strip()
     if value.lower().startswith("discord:"):
         return "discord:" + value.split(":", 1)[1].strip()
     if "@" in value:
         return value.lower()
+    phone = normalize_phone(value, country)
+    if phone:
+        return phone
     digits = "".join(c for c in value if c.isdigit())
     return ("+" + digits) if digits else value
 

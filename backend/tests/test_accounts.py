@@ -89,3 +89,16 @@ async def test_discord_webhook_priority(monkeypatch):
         # anonymous session that saved Setup without a webhook falls back to .env
         await c.put(f"/api/sessions/{anon}/settings", json={"trusted_contact": {"name": "Sis", "phone": "+923001234568"}})
         assert await sessions.get_contact_discord(anon) == env_hook and await sessions.get_own_discord(anon) is None
+
+
+async def test_local_phone_formats_are_normalized():
+    async with client() as c:
+        tok = (await c.post("/api/auth/register", json={"username": "maha", "password": "longenough1"})).json()["token"]
+        h = {"Authorization": f"Bearer {tok}"}
+        for raw in ("03120051793", "0312-0051793", "0092 312 0051793", "+92 312 0051793"):
+            r = await c.put("/api/me", headers=h, json={"trusted_contact": {"name": "Sis", "phone": raw}})
+            assert r.json()["trusted_contact"]["phone"] == "+923120051793", raw
+        assert (await c.put("/api/me", headers=h, json={"trusted_contact": {"name": "Sis", "phone": "12"}})).status_code == 422
+        sid = (await c.post("/api/sessions", json={})).json()["session_id"]
+        await c.put(f"/api/sessions/{sid}/settings", json={"trusted_contact": {"name": "Sis", "phone": "03120051793"}})
+        assert (await c.get(f"/api/sessions/{sid}")).json()["trusted_contact"]["phone"] == "+923120051793"

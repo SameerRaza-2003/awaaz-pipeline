@@ -164,7 +164,7 @@ function ProfileForm({ profile, onSaved, onSignOut }: { profile: Profile; onSave
             </label>
             <label className="block space-y-1">
               <span className="text-xs font-medium text-ink-2">Their phone (calls and SMS)</span>
-              <input className="field" inputMode="tel" placeholder="+923001234567" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input className="field" inputMode="tel" placeholder="03001234567" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </label>
           </div>
           <label className="block space-y-1">

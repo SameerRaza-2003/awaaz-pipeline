@@ -19,7 +19,11 @@ async def fresh_env(tmp_path, monkeypatch):
     monkeypatch.setenv("GEOCODER", "nominatim")
     monkeypatch.setenv("PRIVACY_LLM_REVIEW", "false")
     monkeypatch.setenv("DEFAULT_DISCORD_WEBHOOK", "")
-    monkeypatch.setenv("DEFAULT_TRUSTED_CONTACT", "")  # enabled explicitly in test_privacy.py
+    monkeypatch.setenv("DEFAULT_TRUSTED_CONTACT", "")
+    # Tests never depend on the developer's local .env provider setup.
+    for k, v in {"SMS_PROVIDER": "twilio", "CALL_PROVIDER": "twilio", "MACRODROID_URL": "", "MACRODROID_CALL_URL": "",
+                 "TWILIO_ACCOUNT_SID": "", "TWILIO_AUTH_TOKEN": "", "TWILIO_FROM_NUMBER": "", "OUTBOUND_ALLOWLIST": ""}.items():
+        monkeypatch.setenv(k, v)  # enabled explicitly in test_privacy.py
     get_settings.cache_clear()
     crypto.reset()
 

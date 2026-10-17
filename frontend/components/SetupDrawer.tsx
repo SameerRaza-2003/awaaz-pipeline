@@ -124,7 +124,7 @@ export function SetupDrawer({ sessionId, open, onClose }: { sessionId: string; o
             </label>
             <label className="block space-y-1">
               <span className="text-xs font-medium text-ink-2">Phone (SMS and call)</span>
-              <input className="field" placeholder="+923001234567" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input className="field" placeholder="03001234567" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </label>
             <label className="block space-y-1">
               <span className="flex items-center gap-2 text-xs font-medium text-ink-2">

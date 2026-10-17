@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from app import accounts
-from app.config import normalize_recipient
-from app.outbound import discord_recipient, is_valid_recipient
+from app.config import normalize_phone
+from app.outbound import discord_recipient
 
 router = APIRouter(prefix="/api", tags=["accounts"])
 
@@ -94,9 +94,11 @@ async def update_me(body: ProfileIn, user_id: str = Depends(current_user)):
         profile["locale"] = body.locale
     if body.trusted_contact is not None:
         tc = body.trusted_contact
-        phone = normalize_recipient(tc.phone) if tc.phone and tc.phone.strip() else None
-        if phone and not is_valid_recipient("sms", phone):
-            raise HTTPException(422, "Phone must be in international format, e.g. +923001234567")
+        phone = None
+        if tc.phone and tc.phone.strip():
+            phone = normalize_phone(tc.phone, body.country or profile.get("country"))
+            if not phone:
+                raise HTTPException(422, "Enter a valid phone number, e.g. 03001234567 or +923001234567")
         webhook = (tc.discord_webhook or "").strip()
         if webhook and not discord_recipient(webhook):
             raise HTTPException(422, "Discord webhook must look like https://discord.com/api/webhooks/<id>/<token>")

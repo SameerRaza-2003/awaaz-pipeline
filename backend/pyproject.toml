@@ -12,6 +12,7 @@ dependencies = [
     "langchain-core>=1.6.11",
     "langchain-openai>=1.7.2",
     "numpy>=2.5.4",
+    "phonenumbers>=9.0.41",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.16.0",
     "rapidfuzz>=3.14.6",
