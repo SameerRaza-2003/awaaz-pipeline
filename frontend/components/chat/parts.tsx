@@ -1,6 +1,8 @@
 "use client";
 
+import { Fragment } from "react";
 import { Check, Loader2, Minus, TriangleAlert } from "lucide-react";
+import { useEmergency } from "@/lib/emergency";
 
 export const ICON = { sm: 16, md: 20, lg: 24 } as const;
 export const STROKE = 1.75;
@@ -72,17 +74,37 @@ export function Typing({ label = "Awaaz is writing" }: { label?: string }) {
   );
 }
 
+/** Local emergency numbers, chosen from the phone's time zone (112 when unknown). */
 export function EmergencyNumbers({ className = "" }: { className?: string }) {
+  const { primary } = useEmergency();
   return (
     <p className={`text-small text-ink-2 ${className}`}>
-      Pakistan emergency:{" "}
-      <a href="tel:15" className="font-semibold text-ink underline underline-offset-4">
-        Police 15
-      </a>
-      {" · "}
-      <a href="tel:1122" className="font-semibold text-ink underline underline-offset-4">
-        Rescue 1122
-      </a>
+      In an emergency:{" "}
+      {primary.map((n, i) => (
+        <Fragment key={n.number}>
+          {i > 0 && " · "}
+          <a href={`tel:${n.number}`} className="font-semibold text-ink underline underline-offset-4">
+            {n.label} {n.number}
+          </a>
+        </Fragment>
+      ))}
     </p>
+  );
+}
+
+/** Inline "15 (Police) or 1122 (Rescue)" for sentences that start with "call". */
+export function CallLinks() {
+  const { primary } = useEmergency();
+  return (
+    <>
+      {primary.map((n, i) => (
+        <Fragment key={n.number}>
+          {i > 0 && " or "}
+          <a href={`tel:${n.number}`} className="font-semibold underline underline-offset-4">
+            {n.number} ({n.label})
+          </a>
+        </Fragment>
+      ))}
+    </>
   );
 }

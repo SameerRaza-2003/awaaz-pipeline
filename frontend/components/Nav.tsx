@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError, auth, Health, quickExit } from "@/lib/api";
+import { CallLinks } from "@/components/chat/parts";
 
 function ModeNote({ health }: { health: Health | null }) {
   if (!health || health.outbound_mode === "live") return null;
@@ -21,15 +22,7 @@ function ModeNote({ health }: { health: Health | null }) {
 function DownBanner() {
   return (
     <p className="border-t border-line bg-danger-soft px-4 py-2 text-small text-danger-ink sm:px-6" role="alert">
-      Awaaz cannot reach its server. If you are in danger, call{" "}
-      <a href="tel:15" className="font-semibold underline underline-offset-4">
-        15
-      </a>{" "}
-      or{" "}
-      <a href="tel:1122" className="font-semibold underline underline-offset-4">
-        1122
-      </a>
-      .
+      Awaaz cannot reach its server. If you are in danger, call <CallLinks />.
     </p>
   );
 }

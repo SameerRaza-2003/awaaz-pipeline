@@ -7,6 +7,7 @@ import { Chat } from "@/components/Chat";
 import { EventLog } from "@/components/EventLog";
 import { SetupDrawer } from "@/components/SetupDrawer";
 import { Welcome } from "@/components/Welcome";
+import { CallLinks } from "@/components/chat/parts";
 import { WorkflowGraph } from "@/components/WorkflowGraph";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { api, ApiError, auth, Health, store } from "@/lib/api";
@@ -105,20 +106,7 @@ export default function Home() {
           >
             <h1 className="text-title font-semibold">{err}</h1>
             <p className="text-body text-ink-2">
-              If you are in danger, call{" "}
-              <a
-                className="font-semibold underline underline-offset-4"
-                href="tel:15"
-              >
-                15 (Police)
-              </a>{" "}
-              or{" "}
-              <a
-                className="font-semibold underline underline-offset-4"
-                href="tel:1122"
-              >
-                1122 (Rescue)
-              </a>
+              If you are in danger, call <CallLinks />
               . Check your connection; this page works again as soon as the
               server is reachable.
             </p>

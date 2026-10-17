@@ -2,6 +2,7 @@
 
 import { Loader2, MapPinOff, Phone, UserRoundX } from "lucide-react";
 import { EmergencyNumbers, ICON, STROKE } from "./parts";
+import { useEmergency } from "@/lib/emergency";
 
 export type HelpProps = {
   contactName: string | null;
@@ -104,6 +105,7 @@ function Countdown({ seconds, contactName, onSendNow, onCancel }: { seconds: num
 }
 
 function NoContact({ onOpenSetup, onBack }: { onOpenSetup: () => void; onBack: () => void }) {
+  const emergency = useEmergency();
   return (
     <div className="space-y-4" role="alert">
       <div className="flex items-start gap-3">
@@ -113,13 +115,12 @@ function NoContact({ onOpenSetup, onBack }: { onOpenSetup: () => void; onBack: (
           <p className="mt-1 text-body text-ink-2">Call for help directly from this phone:</p>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <a className="btn btn-danger !min-h-14" href="tel:15">
-          <Phone size={ICON.md} strokeWidth={STROKE} aria-hidden /> Police 15
-        </a>
-        <a className="btn btn-danger !min-h-14" href="tel:1122">
-          <Phone size={ICON.md} strokeWidth={STROKE} aria-hidden /> Rescue 1122
-        </a>
+      <div className={`grid gap-3 ${emergency.primary.length > 1 ? "grid-cols-2" : ""}`}>
+        {emergency.primary.map((n) => (
+          <a key={n.number} className="btn btn-danger !min-h-14" href={`tel:${n.number}`}>
+            <Phone size={ICON.md} strokeWidth={STROKE} aria-hidden /> {n.label} {n.number}
+          </a>
+        ))}
       </div>
       <div className="flex flex-wrap gap-x-6">
         <button className="btn btn-quiet !px-0" onClick={onOpenSetup}>
