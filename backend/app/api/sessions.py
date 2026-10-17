@@ -103,7 +103,7 @@ async def put_settings(session_id: str, body: SettingsIn):
         if tc.phone and tc.phone.strip():
             phone = normalize_phone(tc.phone, body.country or (sess.country if sess else None))
             if not phone:
-                raise HTTPException(422, "Enter a valid phone number, e.g. 03001234567 or +923001234567")
+                raise HTTPException(422, "Enter a valid phone number with its country code, e.g. +44 7700 900123")
         webhook = (tc.discord_webhook or "").strip() or None
         if webhook and not discord_recipient(webhook):
             raise HTTPException(422, "Discord webhook must look like https://discord.com/api/webhooks/<id>/<token>")

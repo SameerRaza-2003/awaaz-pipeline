@@ -98,7 +98,7 @@ async def update_me(body: ProfileIn, user_id: str = Depends(current_user)):
         if tc.phone and tc.phone.strip():
             phone = normalize_phone(tc.phone, body.country or profile.get("country"))
             if not phone:
-                raise HTTPException(422, "Enter a valid phone number, e.g. 03001234567 or +923001234567")
+                raise HTTPException(422, "Enter a valid phone number with its country code, e.g. +44 7700 900123")
         webhook = (tc.discord_webhook or "").strip()
         if webhook and not discord_recipient(webhook):
             raise HTTPException(422, "Discord webhook must look like https://discord.com/api/webhooks/<id>/<token>")

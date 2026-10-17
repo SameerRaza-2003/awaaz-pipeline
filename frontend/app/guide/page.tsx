@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Bot, Building2, Check, FileText, Mail, MapPin, MessageSquare, Phone, Siren, UserRound } from "lucide-react";
+import { ArrowRight, Bot, Building2, Check, FileText, KeyRound, Mail, MapPin, MessageSquare, Phone, Siren, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, Health } from "@/lib/api";
@@ -75,55 +75,71 @@ export default function Guide() {
       .catch(() => {});
   }, []);
   const demo = health?.demo;
-  const login = demo?.authorities_login;
-
   const STEPS: Step[] = [
+    {
+      icon: UserRound,
+      title: "Sign in as the survivor",
+      time: "30 seconds",
+      doThis: [
+        "Press “Sign in” at the top right, or the button below.",
+        "Use the survivor account from the submission PDF.",
+        "You land on her account page.",
+      ],
+      youSee:
+        "Accounts are optional and need no email or real name. An account remembers her trusted contact, so in an emergency there is nothing to type.",
+      cta: { href: "/account", label: "Sign in" },
+    },
+    {
+      icon: Phone,
+      title: "Make yourself her trusted contact",
+      time: "1 minute",
+      doThis: [
+        "Under “Trusted contact”, enter your name and your phone number with its country code.",
+        "Optional: paste a Discord webhook for a channel you can see.",
+        "Press Save.",
+      ],
+      youSee:
+        "From now on every alert from this account goes to you. Calls and SMS come from the team's phone in Pakistan, so if your number is abroad and does not ring, the Discord alert still arrives anywhere.",
+      cta: { href: "/account", label: "Open the account page" },
+    },
     {
       icon: Siren,
       danger: true,
-      title: "Press the emergency button. No account needed.",
-      time: "30 seconds",
-      doThis: ["Open the home screen.", "Press “I am in danger: get help now” and allow location.", "Wait out the three-second countdown, or cancel it."],
-      youSee: demo?.default_contact
-        ? `The alert goes to the team's demo contact: a message in the demo Discord channel, plus a phone call and an SMS to ${demo.default_contact}. New locations follow every two minutes until you press “I'm safe”.`
-        : "The alert goes to the team's demo contact by Discord, phone call and SMS. New locations follow every two minutes until you press “I'm safe”.",
-      cta: { href: "/", label: "Open the home screen" },
-    },
-    {
-      icon: UserRound,
-      title: "Sign in and make the alert come to you",
+      title: "Press “I am in danger”",
       time: "1 minute",
       doThis: [
-        "Create an account. Any username works and no email is asked for.",
-        "Add your own phone number and, if you like, your own Discord webhook.",
-        "Press the emergency button again.",
+        "Go to the home screen and press “I am in danger: get help now”.",
+        "Allow location when the browser asks.",
+        "Let the three-second countdown run.",
       ],
-      youSee: "This time the alert reaches your phone and your Discord channel instead of the team's. Without an account, the demo contact is used so the button always works.",
-      cta: { href: "/account?mode=register&next=/", label: "Create an account" },
+      youSee:
+        "You receive an SMS, a phone call and a Discord message with her street address and a map link. A new location follows every two minutes until she presses “I'm safe”. The Workflow tab shows the Location and Alert agents doing it live.",
+      cta: { href: "/", label: "Go to the home screen" },
     },
     {
       icon: FileText,
       title: "Report what happened",
       time: "3 minutes",
       doThis: [
-        "On the home screen choose “Continue without an account”, then “No, I want to report”.",
-        "Answer a few questions. Any of them can be skipped.",
-        "Read both versions, then send.",
+        "Start a new session and answer “No, I want to report”.",
+        "Describe an incident in your own words, then answer a few short questions. Any can be skipped.",
+        "Read the two versions it writes, then send.",
       ],
       youSee:
-        "Agents write a full complaint for the authorities and an anonymised public summary that passes two privacy checks. Matched activist groups get a designed email. The Workflow, Agents and Events tabs show every step and tool call live.",
+        "Agents write a full complaint for the authorities and an anonymised public summary that passes two privacy checks. Matched activist groups get a designed email. The Agents and Events tabs show every tool call. Note the reference on the receipt.",
       cta: { href: "/", label: "Start a report" },
     },
     {
       icon: Building2,
-      title: "Act as the authorities",
+      title: "Switch sides: the authorities dashboard",
       time: "1 minute",
       doThis: [
-        login ? `Open the dashboard and sign in as ${login.username} with password ${login.password}.` : "Open the dashboard and sign in with the demo login.",
-        "Open the new complaint and change its status.",
+        "Open the dashboard and sign in with the officer account from the submission PDF.",
+        "Open the complaint you just sent and change its status.",
         "Back on the report receipt, press “Demo: skip to the deadline”.",
       ],
-      youSee: "If the complaint was not acted on, a status agent decides to escalate and news outlets receive the public summary by email. If it was, nothing more is sent.",
+      youSee:
+        "Officers see the full complaint, including any name and contact she chose to give. If the complaint was not acted on, a status agent escalates it and news outlets receive the public summary by email. If it was, nothing more is sent.",
       cta: { href: "/authorities", label: "Open the dashboard" },
     },
   ];
@@ -133,11 +149,27 @@ export default function Guide() {
       <article className="mx-auto w-full max-w-3xl space-y-16 px-5 py-12 sm:px-8 sm:py-16">
         <header>
           <p className="label !text-danger-ink">For judges</p>
-          <h1 className="mt-3 text-display font-semibold sm:text-hero">See Awaaz work in five minutes.</h1>
+          <h1 className="mt-3 text-display font-semibold sm:text-hero">See Awaaz work, as her and as the authorities.</h1>
           <p className="mt-4 text-lead text-ink-2">
-            Four short tries cover everything: the one-tap emergency alert, accounts, the reporting agents and the authorities&apos; side. Everything on this server
-            is live: real messages, real calls, real emails.
+            Five steps, about seven minutes. You sign in as a survivor, receive her emergency alert on your own phone, file a report, then act on it from the
+            authorities&apos; side. Everything is live: real messages, real calls, real emails.
           </p>
+
+          <div className="mt-8 rounded-lg border-2 border-ink bg-surface p-5 sm:p-6">
+            <p className="flex items-center gap-2 text-lead font-semibold">
+              <KeyRound size={ICON} strokeWidth={STROKE} aria-hidden /> Two test accounts are in the submission PDF
+            </p>
+            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="border-l-4 border-danger pl-4">
+                <dt className="font-semibold">Survivor account</dt>
+                <dd className="mt-1 text-small text-ink-2">For the app itself: alerts, reports and her saved trusted contact. Sign in from the top right.</dd>
+              </div>
+              <div className="border-l-4 border-ink pl-4">
+                <dt className="font-semibold">Officer account</dt>
+                <dd className="mt-1 text-small text-ink-2">For the authorities dashboard, where complaints arrive and their status is set.</dd>
+              </div>
+            </dl>
+          </div>
 
           <dl className="mt-8 grid gap-3 sm:grid-cols-2">
             <Setting label="AI agents" value={health?.llm_configured ? `Connected · ${health.model_default}` : "Checking…"} ok={!!health?.llm_configured} />
@@ -159,6 +191,7 @@ export default function Guide() {
           <h2 id="tour" className="text-title font-semibold">
             The tour
           </h2>
+          <p className="mt-2 text-body text-ink-2">Do the steps in order: each one uses what the step before it set up.</p>
           <ol className="mt-6 space-y-5">
             {STEPS.map((s, i) => {
               const Icon = s.icon;
@@ -200,6 +233,20 @@ export default function Guide() {
               );
             })}
           </ol>
+        </section>
+
+        <section aria-labelledby="noaccount" className="flex gap-4 rounded-lg border border-line bg-danger-soft p-5 sm:p-6">
+          <Siren size={ICON} strokeWidth={STROKE} className="mt-1 shrink-0 text-danger-ink" aria-hidden />
+          <div>
+            <h2 id="noaccount" className="text-lead font-semibold">
+              Also try it signed out
+            </h2>
+            <p className="mt-1 text-body text-ink-2">
+              Help is never behind a login. Sign out, press “I am in danger” on the welcome screen, and the alert still goes out within seconds, to the
+              team&apos;s demo contact{demo?.default_contact ? ` (${demo.default_contact} and the demo Discord channel)` : ""}, because a signed-out visitor has
+              no saved contact yet.
+            </p>
+          </div>
         </section>
 
         <section aria-labelledby="poc">
