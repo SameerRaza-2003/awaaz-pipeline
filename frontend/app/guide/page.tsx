@@ -75,6 +75,8 @@ export default function Guide() {
       .catch(() => {});
   }, []);
   const demo = health?.demo;
+  const hours = Math.round((health?.escalation_delay_seconds ?? 86400) / 3600);
+
   const STEPS: Step[] = [
     {
       icon: UserRound,
@@ -131,16 +133,16 @@ export default function Guide() {
     },
     {
       icon: Building2,
-      title: "Switch sides: the authorities dashboard",
+      title: "The complaint reaches the authorities",
       time: "1 minute",
       doThis: [
-        "Open the dashboard and sign in with the officer account from the submission PDF.",
-        "Open the complaint you just sent and change its status.",
-        "Back on the report receipt, press “Demo: skip to the deadline”.",
+        "The moment you press Send, the full complaint is filed on the authorities' dashboard. Open it with the officer account from the submission PDF and you will find it there, under the reference on your receipt.",
+        `The authorities then have ${hours} hours to act on it: acknowledge it, start working on it, or resolve it.`,
+        "To see what happens when they do nothing, press “Demo: skip to the deadline” on your receipt instead of waiting.",
       ],
       youSee:
-        "Officers see the full complaint, including any name and contact she chose to give. If the complaint was not acted on, a status agent escalates it and news outlets receive the public summary by email. If it was, nothing more is sent.",
-      cta: { href: "/authorities", label: "Open the dashboard" },
+        "If the authorities take it up in time, the case stays with them and nothing more is sent. If they do not, a status agent escalates it: news outlets receive the anonymised summary by email, so a complaint cannot be quietly ignored.",
+      cta: { href: "/authorities", label: "See it on the dashboard" },
     },
   ];
 
@@ -149,10 +151,10 @@ export default function Guide() {
       <article className="mx-auto w-full max-w-3xl space-y-16 px-5 py-12 sm:px-8 sm:py-16">
         <header>
           <p className="label !text-danger-ink">For judges</p>
-          <h1 className="mt-3 text-display font-semibold sm:text-hero">See Awaaz work, as her and as the authorities.</h1>
+          <h1 className="mt-3 text-display font-semibold sm:text-hero">Follow one case from first tap to the authorities.</h1>
           <p className="mt-4 text-lead text-ink-2">
-            Five steps, about seven minutes. You sign in as a survivor, receive her emergency alert on your own phone, file a report, then act on it from the
-            authorities&apos; side. Everything is live: real messages, real calls, real emails.
+            Five steps, about seven minutes. You sign in as a survivor, receive her emergency alert on your own phone, file a report, then follow it to the
+            authorities. Everything is live: real messages, real calls, real emails.
           </p>
 
           <div className="mt-8 rounded-lg border-2 border-ink bg-surface p-5 sm:p-6">
