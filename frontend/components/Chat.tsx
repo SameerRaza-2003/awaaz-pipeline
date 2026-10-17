@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, ApiError, AwaazEvent, Health, Receipt, SessionInfo } from "@/lib/api";
+import { api, ApiError, AwaazEvent, Health, Receipt, SessionInfo, store } from "@/lib/api";
 import { fmtCountdown } from "@/lib/workflow";
 
 type Props = {
@@ -268,6 +268,15 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
         setLocating(false);
       }
     });
+
+  // Coming from the welcome screen's emergency button: start the alert straight away.
+  useEffect(() => {
+    if (phase === "gate" && store.get("awaaz_autohelp")) {
+      store.del("awaaz_autohelp");
+      getHelp();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   // Without location the alert still goes out after a short countdown: help is never held back.
   useEffect(() => {

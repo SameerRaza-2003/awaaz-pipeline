@@ -6,8 +6,9 @@ import { AgentConsole } from "@/components/AgentConsole";
 import { Chat } from "@/components/Chat";
 import { EventLog } from "@/components/EventLog";
 import { SetupDrawer } from "@/components/SetupDrawer";
+import { Welcome } from "@/components/Welcome";
 import { WorkflowGraph } from "@/components/WorkflowGraph";
-import { api, ApiError, Health, store } from "@/lib/api";
+import { api, ApiError, auth, Health, store } from "@/lib/api";
 import { useEvents } from "@/lib/useEvents";
 import { deriveAgentCards, deriveNodeStates } from "@/lib/workflow";
 
@@ -21,6 +22,8 @@ export default function Home() {
   const [setup, setSetup] = useState(false);
   const [showLive, setShowLive] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // null until mounted; then whether to show the welcome screen first.
+  const [welcome, setWelcome] = useState<boolean | null>(null);
 
   const newSession = useCallback(async () => {
     try {
@@ -34,11 +37,22 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    setWelcome(!auth.token() && !store.get("awaaz_entered"));
+    api<Health>("/healthz").then(setHealth).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (welcome !== false) return;
     const existing = store.get("awaaz_session");
     if (existing) setSessionId(existing);
     else newSession();
-    api<Health>("/healthz").then(setHealth).catch(() => {});
-  }, [newSession]);
+  }, [welcome, newSession]);
+
+  const enter = (emergency: boolean) => {
+    store.set("awaaz_entered", "1");
+    if (emergency) store.set("awaaz_autohelp", "1"); // Chat starts the alert as soon as it loads
+    setWelcome(false);
+  };
 
   // If the session was deleted (e.g. after a demo reset), start a new one instead of retrying forever.
   const sessionStillValid = useCallback(async () => {
@@ -60,6 +74,9 @@ export default function Home() {
   const states = useMemo(() => deriveNodeStates(events), [events]);
   const cards = useMemo(() => deriveAgentCards(events), [events]);
   const running = Object.values(states).filter((s) => s.status === "running").length;
+
+  if (welcome === null) return null;
+  if (welcome) return <Welcome onContinue={() => enter(false)} onEmergency={() => enter(true)} />;
 
   return (
     <div className="mx-auto grid min-h-0 w-full max-w-[1560px] flex-1 gap-3 p-2 sm:p-4 lg:grid-cols-[minmax(360px,520px)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-4 lg:overflow-hidden">

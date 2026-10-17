@@ -143,6 +143,7 @@ export const auth = {
       sessionStorage.removeItem(AUTH_KEY);
       localStorage.removeItem(AUTH_KEY);
       sessionStorage.removeItem("awaaz_session");
+      sessionStorage.removeItem("awaaz_entered"); // back to the welcome screen
       window.dispatchEvent(new Event("awaaz-auth"));
     } catch {}
   },

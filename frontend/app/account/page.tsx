@@ -2,6 +2,7 @@
 
 import { Check, LogOut, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, auth } from "@/lib/api";
 
@@ -15,6 +16,9 @@ type Profile = {
 
 function AuthForm({ onDone }: { onDone: () => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("mode") === "register") setMode("register");
+  }, []);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -246,6 +250,25 @@ function ProfileForm({ profile, onSaved, onSignOut }: { profile: Profile; onSave
 export default function AccountPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  // Arriving from the welcome screen: after signing in, go back to the app.
+  const afterAuth = async () => {
+    const next = new URLSearchParams(window.location.search).get("next");
+    if (next === "/") {
+      try {
+        const p = await api<Profile>("/api/me");
+        // New account with no contact yet: stay here so she can add one first.
+        if (!p.trusted_contact) {
+          setProfile(p);
+          return;
+        }
+      } catch {}
+      router.push("/");
+      return;
+    }
+    load();
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -280,7 +303,7 @@ export default function AccountPage() {
           }}
         />
       ) : (
-        <AuthForm onDone={load} />
+        <AuthForm onDone={afterAuth} />
       )}
     </div>
   );
