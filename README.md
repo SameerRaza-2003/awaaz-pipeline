@@ -19,7 +19,7 @@ The frontend shows the whole workflow live: which agent is running, which tool i
 Next.js (Home, About, Police)  ──REST + SSE──>  FastAPI
                                                  ├─ workflows (plain Python, fixed order): emergency, report, escalation
                                                  │     └─ agents (LangChain create_agent + tools), run by AgentRunner
-                                                 │          Location · Twilio · Intake · Drafting · Matching · Gmail · PoliceDispatch · PoliceStatus
+                                                 │          Location · Alert · Intake · Drafting · Matching · Gmail · PoliceDispatch · PoliceStatus
                                                  ├─ OutboundGuard: every SMS / call / email (dry_run · sandbox · live, idempotent)
                                                  ├─ event bus → events table → SSE (replay with Last-Event-ID)
                                                  └─ scheduler loop over escalation_jobs (survives restarts)
@@ -35,7 +35,7 @@ Each agent is an LLM with tools, but **the order of steps, who gets contacted, a
 | Only communities above the threshold get email | `tools/similarity.select_recipients` uses scores it computed itself |
 | News escalation only when not addressed / not cancelled | `evaluate_addressed` + `trigger_news` re-check, and the workflow overrules the agent |
 | No double sends | `dispatch_log` unique key `(ref, kind, recipient)` claimed before sending |
-| Nothing leaves the machine in dry run | `OutboundGuard`, the only path to Twilio and SMTP |
+| Nothing leaves the machine in dry run | `OutboundGuard`, the only path to calls, SMS, Discord and email |
 | Help still goes out if the LLM fails | deterministic fallbacks: fixed SMS/call template, fixed-question interview, direct police submission |
 | Publication fails closed | if the scanner cannot confirm a clean public text, nothing is sent publicly; the police complaint still goes |
 
@@ -134,7 +134,7 @@ make lint            # frontend typecheck + eslint
 ## Demo script (about 4 minutes)
 
 1. `make demo-reset`, then open the home page. Point out the "Demo mode" banner and the idle workflow graph.
-2. Open **Setup**, add yourself as the trusted contact. Click **Yes**. Location Agent, then Twilio Agent light up; open the Agent Console to show the tool calls and the Maps link. In sandbox mode your phone buzzes.
+2. Open **Setup**, add yourself as the trusted contact. Click **Yes**. Location Agent, then Alert Agent light up; open the Agent Console to show the tool calls and the Maps link. In sandbox mode your phone buzzes.
 3. Press **I'm safe**, then **Start a new session**.
 4. Click **No**, then **Yes, report**. Chat in Urdu or English. Watch Intake, then Drafting (a PII retry shows as a second `pii_scan`), then the two cards.
 5. Press **Send**. Police Dispatch and Matching run side by side; the console shows similarity scores; the Gmail Agent sends.

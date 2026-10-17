@@ -21,7 +21,7 @@ const row = (base: number, i: number) => base + i * (H + GAP);
 const POS: Record<string, { x: number; y: number }> = {
   danger_gate: { x: COL[1], y: 0 },
   location_agent: { x: COL[0], y: row(TOP, 0) },
-  twilio_agent: { x: COL[0], y: row(TOP, 1) },
+  alert_agent: { x: COL[0], y: row(TOP, 1) },
   intake_agent: { x: COL[1], y: row(TOP, 0) },
   drafting_agent: { x: COL[1], y: row(TOP, 1) },
   user_review: { x: COL[1], y: row(TOP, 2) },

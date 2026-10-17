@@ -156,6 +156,6 @@ async def discord_test(session_id: str):
     res = await send_discord(
         session_id, f"test:{secrets.token_hex(4)}", url,
         "Awaaz test message: this channel will receive emergency alerts from someone who trusts you. No action needed.",
-        agent="setup", node="twilio_agent",
+        agent="setup", node="alert_agent",
     )
     return res.as_dict()

@@ -1,4 +1,4 @@
-"""Location Agent and Twilio Agent."""
+"""Location Agent and Alert Agent."""
 
 from pydantic import BaseModel, Field
 
@@ -63,9 +63,9 @@ location_agent = AgentSpec(
 )
 
 
-# ---------------- Twilio Agent ----------------
+# ---------------- Alert Agent ----------------
 
-TWILIO_PROMPT = """You are the Twilio Agent of Awaaz. A harassment survivor pressed "I am in danger".
+ALERT_PROMPT = """You are the Alert Agent of Awaaz. A harassment survivor pressed "I am in danger".
 You alert her trusted contact by SMS and phone call.
 
 You receive the location report and the recipients inside <data> tags.
@@ -159,7 +159,7 @@ async def _get_delivery_status(ctx: RunContext, sid: str) -> dict:
     return {"sid": sid, "status": await delivery_status(sid)}
 
 
-def _twilio_tools(ctx: RunContext):
+def _alert_tools(ctx: RunContext):
     return [
         make_tool(ctx, "send_sms", "Send one SMS to one allowed recipient.", SmsArgs, _send_sms),
         make_tool(ctx, "place_call", "Call the trusted contact; say_text is read aloud twice, slowly.", CallArgs, _place_call),
@@ -168,10 +168,10 @@ def _twilio_tools(ctx: RunContext):
     ]
 
 
-twilio_agent = AgentSpec(
-    name="twilio_agent",
-    system_prompt=TWILIO_PROMPT,
-    build_tools=_twilio_tools,
+alert_agent = AgentSpec(
+    name="alert_agent",
+    system_prompt=ALERT_PROMPT,
+    build_tools=_alert_tools,
     output_schema=AlertResult,
     timeout_s=25,
     max_retries=0,
