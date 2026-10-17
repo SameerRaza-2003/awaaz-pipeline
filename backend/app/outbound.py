@@ -19,6 +19,7 @@ from xml.sax.saxutils import escape
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from app import email_html
 from app.config import get_settings, normalize_recipient
 from app.db import DispatchLog, SessionLocal
 from app.events import bus
@@ -56,7 +57,7 @@ class SmsProvider(Protocol):
 
 
 class EmailSender(Protocol):
-    def send(self, to: str, subject: str, body: str) -> str: ...
+    def send(self, to: str, subject: str, body: str, html: str | None = None) -> str: ...
 
 
 class TwilioProvider:
@@ -88,7 +89,7 @@ class SmtpEmailSender:
             raise RuntimeError("SMTP is not configured (SMTP_USER / SMTP_APP_PASSWORD)")
         self.s = s
 
-    def send(self, to: str, subject: str, body: str) -> str:
+    def send(self, to: str, subject: str, body: str, html: str | None = None) -> str:
         s = self.s
         msg = EmailMessage()
         msg["From"] = formataddr((s.email_from_name, s.smtp_user))
@@ -97,6 +98,8 @@ class SmtpEmailSender:
         msg["Reply-To"] = s.email_reply_to or s.smtp_user
         msg["Message-ID"] = make_msgid(domain="awaaz.local")
         msg.set_content(body)
+        if html:  # mail apps show this; the plain text stays as the fallback
+            msg.add_alternative(html, subtype="html")
         ctx = ssl.create_default_context()
         if s.smtp_port == 465:
             with smtplib.SMTP_SSL(s.smtp_host, s.smtp_port, context=ctx, timeout=30) as server:
@@ -258,7 +261,7 @@ class OutboundGuard:
             # Not an error: this channel simply is not set up on this server.
             res = DispatchResult(to, kind, "skipped", error=f"no {kind} provider configured", mode=mode)
         else:
-            res = await self._send(kind, to, payload, mode)
+            res = await self._send(kind, to, payload, mode, key)
 
         await self._finish(claimed, res)
         await self._emit(session_id, res, payload, agent, node, run_id)
@@ -301,7 +304,7 @@ class OutboundGuard:
             row.error = res.error
             await db.commit()
 
-    async def _send(self, kind: str, to: str, payload: dict[str, Any], mode: str) -> DispatchResult:
+    async def _send(self, kind: str, to: str, payload: dict[str, Any], mode: str, key: str = "") -> DispatchResult:
         last_error = None
         for attempt in range(MAX_SEND_ATTEMPTS):
             try:
@@ -312,9 +315,8 @@ class OutboundGuard:
                 elif kind == "discord":
                     sid = await asyncio.to_thread(discord_sender_factory().send, payload["webhook_url"], payload["body"])
                 else:
-                    sid = await asyncio.to_thread(
-                        email_sender_factory().send, to, payload["subject"], payload["body"]
-                    )
+                    html = email_html.render(kind, payload["subject"], payload["body"], ref=key.split(":")[0] or None)
+                    sid = await asyncio.to_thread(email_sender_factory().send, to, payload["subject"], payload["body"], html=html)
                 return DispatchResult(to, kind, "sent", provider_id=sid, mode=mode)
             except RuntimeError as e:  # configuration problems are not transient
                 return DispatchResult(to, kind, "failed", error=str(e), mode=mode)

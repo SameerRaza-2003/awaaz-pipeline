@@ -149,7 +149,7 @@ async def test_live_failure_retries_and_logs(monkeypatch):
     calls = []
 
     class Broken:
-        def send(self, to, subject, body):
+        def send(self, to, subject, body, html=None):
             calls.append(to)
             raise ConnectionError("smtp down")
 
