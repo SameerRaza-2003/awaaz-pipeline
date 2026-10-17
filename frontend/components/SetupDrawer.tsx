@@ -200,7 +200,7 @@ export function SetupDrawer({
                   id="tc-phone"
                   type="tel"
                   className="field mt-1"
-                  placeholder="03001234567"
+                  placeholder="+44 7700 900123"
                   inputMode="tel"
                   autoComplete="off"
                   value={phone}

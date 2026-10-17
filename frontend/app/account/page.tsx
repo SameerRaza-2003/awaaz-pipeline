@@ -201,7 +201,7 @@ function ProfileForm({ profile, onSaved, onSignOut }: { profile: Profile; onSave
               <label htmlFor="p-phone" className="text-small font-semibold">
                 Their phone, for text and call
               </label>
-              <input id="p-phone" type="tel" className="field mt-1" inputMode="tel" placeholder="03001234567" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input id="p-phone" type="tel" className="field mt-1" inputMode="tel" placeholder="+44 7700 900123" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
           </div>
           <div>

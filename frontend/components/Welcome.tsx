@@ -17,7 +17,7 @@ export function Welcome({ onContinue, onEmergency }: { onContinue: () => void; o
           className="mb-8 flex items-center justify-between gap-3 rounded-md border border-line-strong bg-surface px-4 py-3 text-small hover:border-ink"
         >
           <span>
-            <span className="font-semibold">Judging Awaaz?</span> <span className="text-ink-2">Take the five-minute guided tour.</span>
+            <span className="font-semibold">Judging Awaaz?</span> <span className="text-ink-2">Start with the judges&apos; guide: test accounts and a step-by-step tour.</span>
           </span>
           <ArrowRight size={18} strokeWidth={1.75} className="shrink-0" aria-hidden />
         </Link>
