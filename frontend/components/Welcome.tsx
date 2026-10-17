@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { EmergencyNumbers } from "@/components/chat/parts";
 
@@ -11,6 +12,15 @@ export function Welcome({ onContinue, onEmergency }: { onContinue: () => void; o
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-5 pb-6 pt-10 sm:px-8">
+        <Link
+          href="/guide"
+          className="mb-8 flex items-center justify-between gap-3 rounded-md border border-line-strong bg-surface px-4 py-3 text-small hover:border-ink"
+        >
+          <span>
+            <span className="font-semibold">Judging Awaaz?</span> <span className="text-ink-2">Take the five-minute guided tour.</span>
+          </span>
+          <ArrowRight size={18} strokeWidth={1.75} className="shrink-0" aria-hidden />
+        </Link>
         <p className="label">Awaaz</p>
         <h1 className="mt-3 text-display font-semibold sm:text-hero">Help when you need it. A report when you are ready.</h1>
         <p className="mt-4 text-lead text-ink-2">
@@ -24,7 +34,7 @@ export function Welcome({ onContinue, onEmergency }: { onContinue: () => void; o
             <button className="btn btn-danger w-full !min-h-16 text-lead" onClick={onEmergency}>
               I am in danger: get help now
             </button>
-            <p className="mt-2 text-small text-ink-2">No login needed. You get three seconds to cancel before your contact is alerted.</p>
+            <p className="mt-2 text-small text-ink-2">No login needed. You get three seconds to cancel. Without an account, the demo contact is alerted.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Link href="/account?next=/" className="btn btn-primary">

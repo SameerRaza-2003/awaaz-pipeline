@@ -82,6 +82,8 @@ export function Nav() {
   const links = [
     { href: "/", label: "Home", short: "Home" },
     { href: "/about", label: "How it works", short: "About" },
+    // On phones the welcome screen links to the guide instead, so the header keeps room for Exit.
+    { href: "/guide", label: "Judges' guide", short: "Guide", wide: true },
   ];
 
   return (
@@ -93,7 +95,7 @@ export function Nav() {
             key={l.href}
             href={l.href}
             aria-current={path === l.href ? "page" : undefined}
-            className={`flex min-h-11 items-center whitespace-nowrap px-2 text-small sm:px-3 ${
+            className={`${"wide" in l ? "hidden sm:flex" : "flex"} min-h-11 items-center whitespace-nowrap px-2 text-small sm:px-3 ${
               path === l.href ? "font-semibold text-ink underline decoration-2 underline-offset-8" : "text-ink-2 hover:text-ink"
             }`}
           >
