@@ -54,10 +54,13 @@ COMMUNITIES = [
     ),
 ]
 
+# Old seed names, renamed in place on start so existing databases keep their rows.
+RENAMED_NEWS = {"Pakistan Herald Tips (fictional)": "Herald Tips Line (fictional)"}
+
 NEWS = [
     ("Daily Sach Desk (fictional)", "PK"),
     ("Indus Newswire (fictional)", "PK"),
-    ("Pakistan Herald Tips (fictional)", "PK"),
+    ("Herald Tips Line (fictional)", "PK"),
 ]
 
 
@@ -74,6 +77,11 @@ async def sync_emails() -> int:
     """Point existing demo organisations at the configured inboxes (runs on every start). Returns rows changed."""
     changed = 0
     async with SessionLocal() as db:
+        for old, new in RENAMED_NEWS.items():
+            row = await db.scalar(select(NewsAgency).where(NewsAgency.name == old))
+            if row and not await db.scalar(select(NewsAgency).where(NewsAgency.name == new)):
+                row.name = new
+                changed += 1
         for i, (name, _, _) in enumerate(COMMUNITIES, 1):
             row = await db.scalar(select(Community).where(Community.name == name))
             if row and row.email != _addr("community", i):
