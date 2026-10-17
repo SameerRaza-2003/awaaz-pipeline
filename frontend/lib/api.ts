@@ -28,7 +28,6 @@ export type Health = {
     sms_provider: string;
     call_provider: string;
     email_configured: boolean;
-    authorities_login: { username: string; password: string };
   } | null;
 };
 

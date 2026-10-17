@@ -89,7 +89,6 @@ def create_app(with_lifespan: bool = True) -> FastAPI:
             "sms_provider": s.sms_provider,
             "call_provider": s.call_provider,
             "email_configured": bool(s.smtp_user and s.smtp_app_password),
-            "authorities_login": {"username": s.police_demo_user, "password": s.police_demo_password},
         }
 
     @app.get("/api/costs")
