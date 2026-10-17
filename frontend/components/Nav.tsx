@@ -6,13 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, auth, Health, quickExit } from "@/lib/api";
 
-function ModeNote({ health, down }: { health: Health | null; down: boolean }) {
-  if (down)
-    return (
-      <span className="text-caption font-semibold text-danger-ink" role="alert">
-        Server unreachable. Call 15.
-      </span>
-    );
+function ModeNote({ health }: { health: Health | null }) {
   if (!health || health.outbound_mode === "live") return null;
   return (
     <span
@@ -21,6 +15,22 @@ function ModeNote({ health, down }: { health: Health | null; down: boolean }) {
     >
       {health.outbound_mode === "dry_run" ? "Dry run: nothing is sent" : "Sandbox: test recipients only"}
     </span>
+  );
+}
+
+function DownBanner() {
+  return (
+    <p className="border-t border-line bg-danger-soft px-4 py-2 text-small text-danger-ink sm:px-6" role="alert">
+      Awaaz cannot reach its server. If you are in danger, call{" "}
+      <a href="tel:15" className="font-semibold underline underline-offset-4">
+        15
+      </a>{" "}
+      or{" "}
+      <a href="tel:1122" className="font-semibold underline underline-offset-4">
+        1122
+      </a>
+      .
+    </p>
   );
 }
 
@@ -66,9 +76,10 @@ export function Nav() {
         <nav aria-label="Police" className="flex h-(--header-h) items-center gap-4 px-4 lg:px-6">
           <Wordmark sub="Complaint queue" />
           <span className="ml-auto">
-            <ModeNote health={health} down={down} />
+            <ModeNote health={health} />
           </span>
         </nav>
+        {down && <DownBanner />}
       </header>
     );
   }
@@ -99,7 +110,7 @@ export function Nav() {
           Police dashboard
         </Link>
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          <ModeNote health={health} down={down} />
+          <ModeNote health={health} />
           <Link
             href="/account"
             aria-label={user ? `Account: ${user}` : "Sign in"}
@@ -120,6 +131,7 @@ export function Nav() {
           </button>
         </div>
       </nav>
+      {down && <DownBanner />}
     </header>
   );
 }

@@ -78,6 +78,13 @@ Dark mode is designed separately (warm near-black, lighter tonal text colours), 
 - Z-index: `--z-sticky` 10, `--z-header` 20, `--z-overlay` 40, `--z-toast` 50.
 - Touch targets: 48 px minimum on survivor screens, 40 px on police screens (pointer use).
 
+## Motif
+
+One ornament, used with intent: a **jaali window**, the carved lattice screen of Mughal and South Asian architecture,
+framed in a pointed arch (`components/Jaali.tsx`). A jaali lets light and air in while keeping the people inside private,
+which is the promise of the product. It is drawn in the line colours only (so it follows light and dark mode), never sits
+behind text, and is hidden from assistive technology. Used on the welcome screen; do not tile it as wallpaper.
+
 ## Icons
 
 Lucide only, outline, stroke 1.75, sizes 16 / 20 / 24 (`--icon-sm/md/lg`). Icons beside text are `aria-hidden`.
