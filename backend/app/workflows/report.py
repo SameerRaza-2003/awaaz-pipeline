@@ -27,12 +27,10 @@ from app.workflows.emergency import spawn
 
 _locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
-GREETING = {
-    "en": "Thank you for trusting us. I'm here to listen, and you can skip any question. "
-    "Whenever you're ready, could you tell me in your own words what happened?",
-    "ur": "ہم پر بھروسہ کرنے کا شکریہ۔ میں سن رہی ہوں، آپ کوئی بھی سوال چھوڑ سکتی ہیں۔ "
-    "جب آپ تیار ہوں، کیا آپ اپنے الفاظ میں بتا سکتی ہیں کہ کیا ہوا؟",
-}
+GREETING = (
+    "Thank you for trusting us. I'm here to listen, and you can skip any question. "
+    "Whenever you're ready, could you tell me in your own words what happened?"
+)
 
 CLOSING = (
     "Thank you. You are not alone, and you can come back any time. If you ever feel unsafe, press "
@@ -63,7 +61,7 @@ async def start(session_id: str, wants_report: bool) -> dict[str, Any]:
         state = await load_state(session_id)
         if state.get("transcript"):
             return {"phase": sess.phase, "message": state["transcript"][-1]["text"]}
-        greeting = GREETING.get(sess.locale if sess else "en", GREETING["en"])
+        greeting = GREETING
         state = {
             "transcript": [{"role": "assistant", "text": greeting}],
             "slots": {"country": sess.country if sess else get_settings().default_country},
@@ -117,7 +115,7 @@ async def message(session_id: str, text: str) -> dict[str, Any]:
                     break
         except AgentFailed:
             if not state.get("final"):
-                reply = fallback_turn(state, text, sess.locale)
+                reply = fallback_turn(state, text)
                 if reply is None:
                     state["record"] = build_record(state.get("slots", {}), state.get("default_country", "PK")).model_dump()
                     state["final"] = True
