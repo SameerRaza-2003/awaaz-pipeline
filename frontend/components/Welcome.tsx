@@ -20,7 +20,7 @@ export function Welcome({ onContinue, onEmergency }: { onContinue: () => void; o
           <ShieldAlert size={22} aria-hidden />
           I&apos;m in danger: get help now
         </button>
-        <p className="-mt-3 text-center text-xs text-muted">No login needed. Your trusted contact is alerted with your location.</p>
+        <p className="-mt-3 text-center text-xs text-muted">No login needed. Your trusted contact is alerted with your location, after a 3-second chance to cancel.</p>
 
         <div className="card space-y-3 p-5">
           <div className="grid grid-cols-2 gap-2">

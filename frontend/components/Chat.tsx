@@ -142,6 +142,8 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
   const [pending, setPending] = useState<Msg | null>(null);
   const [dangerPrompt, setDangerPrompt] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [armed, setArmed] = useState<number | null>(null); // seconds left before a one-tap alert is sent
+  const [noContact, setNoContact] = useState(false);
   const [locDenied, setLocDenied] = useState<{ seconds: number; reason: string } | null>(null);
   const [locText, setLocText] = useState("");
   const [policeText, setPoliceText] = useState("");
@@ -259,6 +261,14 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
   const getHelp = () =>
     run(async () => {
       setDangerPrompt(false);
+      setArmed(null);
+      // Nobody to alert: say so immediately and offer emergency numbers instead of waiting for nothing.
+      const latest = await api<SessionInfo>(`/api/sessions/${sessionId}`).catch(() => session);
+      if (!latest?.trusted_contact) {
+        setNoContact(true);
+        return;
+      }
+      setNoContact(false);
       setLocating(true);
       try {
         const { pos, reason } = await getPosition();
@@ -273,10 +283,22 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
   useEffect(() => {
     if (phase === "gate" && store.get("awaaz_autohelp")) {
       store.del("awaaz_autohelp");
-      getHelp();
+      setArmed(3);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
+
+  // One-tap alerts wait 3 seconds so an accidental tap can be cancelled.
+  useEffect(() => {
+    if (armed === null) return;
+    if (armed <= 0) {
+      setArmed(null);
+      getHelp();
+      return;
+    }
+    const t = setTimeout(() => setArmed((a) => (a === null ? null : a - 1)), 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [armed]);
 
   // Without location the alert still goes out after a short countdown: help is never held back.
   useEffect(() => {
@@ -447,7 +469,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
           </div>
           <div className="ml-auto flex items-center gap-1.5">
             {showHelpButton && (
-              <button className="btn btn-danger btn-sm" onClick={getHelp} disabled={busy && phase !== "intake"}>
+              <button className="btn btn-danger btn-sm" onClick={() => setArmed(3)} disabled={(busy && phase !== "intake") || armed !== null}>
                 <ShieldAlert size={15} aria-hidden />
                 Get help now
               </button>
@@ -464,7 +486,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
       <div ref={scroller} className="scroll-thin min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
         <Bubble m={{ role: "assistant", text: "Are you in danger right now?" }} />
 
-        {phase === "gate" && !locating && !locDenied && (
+        {phase === "gate" && !locating && !locDenied && armed === null && !noContact && (
           <div className="rise grid grid-cols-2 gap-2.5">
             <button className="btn btn-danger !min-h-14 text-base" disabled={busy} onClick={getHelp}>
               Yes, I need help
@@ -501,6 +523,54 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
                 </div>
               </div>
             </dl>
+          </div>
+        )}
+
+        {armed !== null && (
+          <div className="rise card space-y-3 border-danger p-4" role="alert">
+            <div className="flex items-center gap-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-danger text-xl font-semibold text-danger-ink">{armed}</span>
+              <div>
+                <p className="font-medium">Alerting your trusted contact</p>
+                <p className="text-sm text-ink-2">Your location will be sent in {armed} second{armed === 1 ? "" : "s"}.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="btn btn-danger" onClick={() => setArmed(0)}>
+                Send now
+              </button>
+              <button className="btn btn-ghost" onClick={() => setArmed(null)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {noContact && (
+          <div className="rise card space-y-3 border-danger p-4" role="alert">
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-danger" />
+              <div>
+                <p className="font-medium">No trusted contact is set up, so no one can be alerted automatically.</p>
+                <p className="text-sm text-ink-2">Call for help directly from your phone:</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <a className="btn btn-danger !min-h-12" href="tel:15">
+                <Phone size={16} aria-hidden /> Police 15
+              </a>
+              <a className="btn btn-danger !min-h-12" href="tel:1122">
+                <Phone size={16} aria-hidden /> Rescue 1122
+              </a>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button className="btn btn-ghost btn-sm" onClick={onOpenSetup}>
+                Add a trusted contact
+              </button>
+              <button className="btn btn-quiet btn-sm" onClick={() => setNoContact(false)}>
+                Back
+              </button>
+            </div>
           </div>
         )}
 
