@@ -115,7 +115,7 @@ class DispatchLog(Base):
     __table_args__ = (UniqueConstraint("public_ref", "kind", "recipient", name="uq_dispatch"),)
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     public_ref: Mapped[str] = mapped_column(String, index=True)  # or emergency key for sms/call
-    kind: Mapped[str] = mapped_column(String)  # community_email|news_email|sms|call
+    kind: Mapped[str] = mapped_column(String)  # community_email|news_email|authority_email|sms|call
     recipient: Mapped[str] = mapped_column(String)
     status: Mapped[str] = mapped_column(String)  # pending|sent|dry_run|blocked|failed
     provider_id: Mapped[str | None] = mapped_column(String, nullable=True)

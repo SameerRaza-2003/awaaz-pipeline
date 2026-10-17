@@ -227,3 +227,13 @@ async def test_dry_run_never_touches_network(monkeypatch):
         statuses = {r.status for r in (await db.scalars(select(DispatchLog))).all()}
     assert statuses == {"dry_run"}
     assert get_settings().outbound_mode == "dry_run" and ref
+
+
+async def test_news_agency_email_override(monkeypatch):
+    s = Scripts().install()
+    ref = await _submitted_case(monkeypatch, s)
+    monkeypatch.setenv("NEWS_AGENCY_EMAIL", "Desk@News.example")
+    get_settings.cache_clear()
+    assert (await escalation.trigger_news(ref, "s"))["triggered"] is True
+    news = await _news(ref)
+    assert [n.recipient for n in news] == ["desk@news.example"]

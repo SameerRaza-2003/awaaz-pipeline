@@ -116,7 +116,11 @@ async def check_news_allowed(public_ref: str) -> dict[str, Any]:
     status = (await police_client.status(r.police_ref))["status"]
     if evaluate_addressed(status):
         return {"allowed": False, "reason": f"complaint addressed ({status})", "status": status}
-    recipients = [{"name": a.name, "email": a.email} for a in agencies if a.country.upper() == r.country.upper()]
+    override = get_settings().news_agency_email.strip()
+    if override:
+        recipients = [{"name": "News desk", "email": override}]
+    else:
+        recipients = [{"name": a.name, "email": a.email} for a in agencies if a.country.upper() == r.country.upper()]
     if not recipients:
         return {"allowed": False, "reason": f"no news agencies for {r.country}"}
     return {"allowed": True, "status": status, "report": r, "recipients": recipients}

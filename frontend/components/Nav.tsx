@@ -15,7 +15,7 @@ const LINKS: { href: string; label: string; short?: string }[] = [
 function ModePill({ health, down }: { health: Health | null; down: boolean }) {
   if (down)
     return (
-      <span className="rounded-full bg-danger-soft px-2.5 py-1 text-xs font-medium text-danger" role="alert">
+      <span className="rounded-full bg-danger-soft px-3 py-1.5 text-sm font-medium text-danger" role="alert">
         Server unreachable · call 15
       </span>
     );
@@ -29,7 +29,7 @@ function ModePill({ health, down }: { health: Health | null; down: boolean }) {
         ? "Messages only go to allow-listed test recipients"
         : "Messages are sent to real recipients";
   return (
-    <span className={`hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex ${tone}`} title={title}>
+    <span className={`hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium sm:inline-flex ${tone}`} title={title}>
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
       {label}
       {!health.llm_configured && " · no AI key"}
@@ -62,16 +62,21 @@ export function Nav() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur">
-      <nav className="mx-auto flex h-14 max-w-[1560px] items-center gap-1 px-3 sm:px-5">
-        <Link href="/" className="mr-3 flex items-baseline gap-2 sm:mr-6">
-          <span className="text-[1.05rem] font-semibold tracking-tight">Awaaz</span>
-          <span className="urdu hidden text-sm leading-none text-muted sm:inline">آواز</span>
+      <nav className="mx-auto flex h-16 max-w-[1560px] items-center gap-1 px-3 sm:h-20 sm:gap-1.5 sm:px-6">
+        <Link href="/" className="mr-1 flex shrink-0 items-center gap-3 sm:mr-8">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-lg font-bold text-accent-ink sm:h-11 sm:w-11 sm:text-xl" aria-hidden>
+            A
+          </span>
+          <span className="hidden flex-col leading-tight sm:flex">
+            <span className="text-2xl font-semibold tracking-tight">Awaaz</span>
+            <span className="urdu hidden text-base leading-none text-muted sm:inline">آواز</span>
+          </span>
         </Link>
         {LINKS.map((l) => (
           <Link
             key={l.href}
             href={l.href}
-            className={`whitespace-nowrap rounded-md px-2 py-1.5 text-sm transition-colors sm:px-2.5 ${
+            className={`whitespace-nowrap rounded-lg px-2 py-2 text-sm transition-colors sm:px-3.5 sm:py-2.5 sm:text-base ${
               path === l.href ? "bg-surface-3 font-medium text-ink" : "text-ink-2 hover:bg-surface-2"
             }`}
           >
@@ -85,18 +90,18 @@ export function Nav() {
             )}
           </Link>
         ))}
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
           <ModePill health={health} down={down} />
           <Link
             href="/account"
-            className={`btn btn-sm ${path === "/account" ? "btn-ghost" : "btn-quiet"}`}
+            className={`btn ${path === "/account" ? "btn-ghost" : "btn-quiet"} max-sm:!min-h-9 max-sm:!px-2.5`}
             title={user ? `Signed in as ${user}` : "Optional account to save your trusted contact"}
           >
-            <UserRound size={15} aria-hidden />
-            <span className="hidden max-w-28 truncate sm:inline">{user ?? "Sign in"}</span>
+            <UserRound size={17} aria-hidden />
+            <span className="hidden max-w-32 truncate sm:inline">{user ?? "Sign in"}</span>
           </Link>
-          <button onClick={quickExit} className="btn btn-ghost btn-sm" title="Leave this site immediately and clear this session">
-            <LogOut size={15} aria-hidden />
+          <button onClick={quickExit} className="btn btn-ghost max-sm:!min-h-9 max-sm:!px-2.5" title="Leave this site immediately and clear this session">
+            <LogOut size={17} aria-hidden />
             <span className="hidden sm:inline">Quick exit</span>
             <span className="sm:hidden">Exit</span>
           </button>

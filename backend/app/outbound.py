@@ -23,7 +23,7 @@ from app.config import get_settings, normalize_recipient
 from app.db import DispatchLog, SessionLocal
 from app.events import bus
 
-Kind = Literal["sms", "call", "discord", "community_email", "news_email"]
+Kind = Literal["sms", "call", "discord", "community_email", "news_email", "authority_email"]
 DISCORD_WEBHOOK_RE = re.compile(r"^https://(?:canary\.|ptb\.)?(?:discord|discordapp)\.com/api/webhooks/(\d{5,25})/([\w-]{20,})/?$")
 MAX_SEND_ATTEMPTS = 2
 RETRY_BASE_DELAY_S = 1.5
@@ -326,7 +326,7 @@ class OutboundGuard:
 
     async def _emit(self, session_id, res: DispatchResult, payload, agent, node, run_id) -> None:
         data = {**res.as_dict(), "dry_run": res.mode == "dry_run"}
-        if res.kind in ("community_email", "news_email"):
+        if res.kind in ("community_email", "news_email", "authority_email"):
             data["subject"] = payload.get("subject")
             data["body_preview"] = (payload.get("body") or "")[:400]
         elif res.kind in ("sms", "discord"):

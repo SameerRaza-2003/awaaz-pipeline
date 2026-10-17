@@ -63,7 +63,7 @@ export default function Home() {
 
   return (
     <div className="mx-auto grid min-h-0 w-full max-w-[1560px] flex-1 gap-3 p-2 sm:p-4 lg:grid-cols-[minmax(360px,520px)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-4 lg:overflow-hidden">
-      <section className="card flex h-[calc(100dvh-4.5rem)] min-h-0 flex-col overflow-hidden lg:h-full" aria-label="Chat">
+      <section className="card flex h-[calc(100dvh-5rem)] min-h-0 flex-col overflow-hidden lg:h-full" aria-label="Chat">
         {err && <p className="m-3 rounded-lg bg-danger-soft p-3 text-sm text-danger">{err}</p>}
         {sessionId && (
           <Chat key={sessionId} sessionId={sessionId} events={events} health={health} onNewSession={newSession} onOpenSetup={() => setSetup(true)} />
