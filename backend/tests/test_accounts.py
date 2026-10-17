@@ -102,3 +102,22 @@ async def test_local_phone_formats_are_normalized():
         sid = (await c.post("/api/sessions", json={})).json()["session_id"]
         await c.put(f"/api/sessions/{sid}/settings", json={"trusted_contact": {"name": "Sis", "phone": "03120051793"}})
         assert (await c.get(f"/api/sessions/{sid}")).json()["trusted_contact"]["phone"] == "+923120051793"
+
+
+async def test_alerts_name_the_signed_in_person():
+    from app import accounts, sessions
+    from app.agents.schemas import LocationReport
+    from app.workflows.emergency import template_call, template_sms
+
+    user = await accounts.register("sana_k", "password123")
+    signed_in = (await sessions.create_session(user_id=user.id)).id
+    signed_out = (await sessions.create_session()).id
+    assert await accounts.account_name(signed_in) == "sana_k"
+    assert await accounts.account_name(signed_out) is None
+
+    await accounts.save_profile(user.id, {"display_name": "Sana"})
+    sender = await accounts.account_name(signed_in)
+    assert sender == "Sana"
+    report = LocationReport(location_available=False)
+    assert "Sana says" in template_sms("Ali", report, sender) and "Sana says" in template_call(report, sender)
+    assert "listed you (Ali)" in template_sms("Ali", report, None)

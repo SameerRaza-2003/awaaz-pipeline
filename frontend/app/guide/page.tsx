@@ -115,7 +115,7 @@ export default function Guide() {
         "Let the three-second countdown run.",
       ],
       youSee:
-        "You receive an SMS, a phone call and a Discord message with her street address and a map link. A new location follows every two minutes until she presses “I'm safe”. The Workflow tab shows the Location and Alert agents doing it live.",
+        "You receive an SMS, a phone call and a Discord message that name her (her account’s display name) and give her street address and a map link. A new location follows every two minutes until she presses “I'm safe”. The Workflow tab shows the Location and Alert agents doing it live.",
       cta: { href: "/", label: "Go to the home screen" },
     },
     {

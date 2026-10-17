@@ -69,6 +69,8 @@ ALERT_PROMPT = """You are the Alert Agent of Awaaz. A harassment survivor presse
 You alert her trusted contact by SMS and phone call.
 
 You receive the location report and the recipients inside <data> tags.
+If sender_name is given, name her in every message (SMS, call script and Discord), for example "Sana may be in danger".
+If sender_name is none, say "the person who listed you as a trusted contact" instead.
 1. Write a calm, short SMS (under 300 characters) to the trusted contact: say the survivor may be in danger
    and needs help now, include the Google Maps link (or say the location is unavailable and give any typed
    location), and the last-updated time. Call send_sms once for each recipient listed under sms_recipients.
@@ -97,6 +99,13 @@ class DiscordArgs(BaseModel):
     body: str = Field(min_length=10, max_length=1800)
 
 
+def ensure_sender(body: str, sender: str | None) -> str:
+    """The contact must know who is asking for help: name her if the agent left it out."""
+    if sender and sender.lower() not in body.lower():
+        body = f"{sender} needs help. {body}"
+    return body
+
+
 def ensure_link(body: str, report: dict) -> str:
     link = report.get("maps_link")
     if link and link not in body:
@@ -109,7 +118,7 @@ async def _send_sms(ctx: RunContext, to: str, body: str) -> dict:
     to_n = normalize_recipient(to)
     if to_n not in allowed:
         return {"status": "rejected", "error": "recipient is not one of the allowed sms_recipients"}
-    body = ensure_link(body, ctx.state["report"])
+    body = ensure_link(ensure_sender(body, ctx.state.get("sender")), ctx.state["report"])
     res = await guard.dispatch(
         kind="sms",
         key=ctx.state["dispatch_key"],
@@ -132,7 +141,7 @@ async def _place_call(ctx: RunContext, to: str, say_text: str) -> dict:
         key=ctx.state["dispatch_key"],
         recipient=to_n,
         session_id=ctx.session_id,
-        payload={"say_text": say_text},
+        payload={"say_text": ensure_sender(say_text, ctx.state.get("sender"))},
         agent=ctx.agent,
         node=ctx.node,
         run_id=ctx.run_id,
@@ -144,7 +153,7 @@ async def _send_discord_alert(ctx: RunContext, body: str) -> dict:
     url = ctx.state.get("discord_url")
     if not url:
         return {"status": "skipped", "error": "the trusted contact has no Discord webhook"}
-    res = await send_discord(ctx.session_id, ctx.state["dispatch_key"], url, ensure_link(body, ctx.state["report"]),
+    res = await send_discord(ctx.session_id, ctx.state["dispatch_key"], url, ensure_link(ensure_sender(body, ctx.state.get("sender")), ctx.state["report"]),
                              agent=ctx.agent, node=ctx.node, run_id=ctx.run_id)
     return {"to": res.to, "sid": res.provider_id, "status": res.status, "error": res.error}
 
