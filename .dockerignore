@@ -1,0 +1,12 @@
+.env
+**/node_modules
+**/.next
+**/.next-*
+**/.venv
+**/__pycache__
+backend/data
+frontend/certificates
+evals/results
+docs/ui-shots
+PLAN.md
+.git
