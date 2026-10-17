@@ -133,9 +133,19 @@ export const auth = {
   /** Remembered only for this tab unless she chooses "remember me" (safer on a shared phone). */
   set(state: AuthState, remember: boolean) {
     try {
+      auth.forget(); // never leave an older account's token behind in the other store
       (remember ? localStorage : sessionStorage).setItem(AUTH_KEY, JSON.stringify(state));
       sessionStorage.removeItem("awaaz_session"); // the next session is linked to the account
       window.dispatchEvent(new Event("awaaz-auth"));
+    } catch {}
+  },
+  /** Drop the token only (used before a new sign-in attempt). */
+  forget() {
+    try {
+      const had = sessionStorage.getItem(AUTH_KEY) || localStorage.getItem(AUTH_KEY);
+      sessionStorage.removeItem(AUTH_KEY);
+      localStorage.removeItem(AUTH_KEY);
+      if (had) window.dispatchEvent(new Event("awaaz-auth"));
     } catch {}
   },
   clear() {
