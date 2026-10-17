@@ -184,3 +184,27 @@ async def test_demo_org_emails_follow_configured_inboxes(monkeypatch):
     assert all(e.startswith("saadahmed292000+community") and e.endswith("@gmail.com") for e in comm) and len(comm) == 7
     assert news == {f"saribazim6+news{i}@gmail.com" for i in (1, 2, 3)}
     assert await sync_emails() == 0
+
+
+def test_email_html_keeps_every_part_of_the_text():
+    from app.email_html import parse, render
+
+    body = (
+        "Hello,\n\nAwaaz shares this anonymised case.\n\n--- Case description ---\nShe was followed <home>.\n--- End ---\n\n"
+        "Suggested social-media post:\nA survivor was followed. #Awaaz\n\nThank you.\n\nReply to: desk@example.org\nReply STOP to stop receiving cases."
+    )
+    p = parse(body)
+    assert p["case"] == "She was followed <home>."
+    assert p["post"] == "A survivor was followed. #Awaaz"
+    assert p["reply_to"] == "desk@example.org" and p["stop"]
+    assert p["intro"] == ["Hello,", "Awaaz shares this anonymised case."] and p["outro"] == ["Thank you."]
+    html = render("community_email", "Case AWZ-1", body, ref="AWZ-1")
+    assert "She was followed &lt;home&gt;." in html and "<home>" not in html  # text is escaped, never injected
+    assert "Share this post" in html and "AWZ-1" in html
+
+
+def test_email_without_markers_still_renders_the_whole_body():
+    from app.email_html import render
+
+    html = render("news_email", "Complaint AWZ-2", "Just a plain note about AWZ-2.")
+    assert "Just a plain note about AWZ-2." in html and "No action was recorded" in html

@@ -129,7 +129,7 @@ def template_email(mode: str, public_ref: str, public_text: str, filed_on: str |
     if mode == "communities":
         subject = f"Anonymised harassment case {public_ref} for awareness"
         body = (
-            "Assalam-o-Alaikum,\n\nAwaaz is a survivor-led reporting tool. A survivor chose to share the anonymised case "
+            "Hello,\n\nAwaaz is a survivor-led reporting tool. A survivor chose to share the anonymised case "
             "below with communities working on this issue, so it can be raised publicly.\n\n"
             f"--- Case description ---\n{public_text}\n--- End ---\n\n"
             f"Suggested post: A survivor has reported harassment (case {public_ref}). Survivors deserve to be heard "
