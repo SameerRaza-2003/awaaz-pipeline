@@ -93,7 +93,7 @@ async def eval_tool_calls() -> dict:
     called = await tools_called(sid)
     fb = [e for e in await __import__("app.events", fromlist=["bus"]).bus.history(sid) if e["kind"] == "step" and e["data"].get("fallback")]
     results["location_agent"] = {"get_latest_location", "build_maps_link"} <= set(called) and not any(e["node"] == "location_agent" for e in fb)
-    results["twilio_agent"] = {"send_sms", "place_call"} <= set(called) and not any(e["node"] == "twilio_agent" for e in fb)
+    results["alert_agent"] = {"send_sms", "place_call"} <= set(called) and not any(e["node"] == "alert_agent" for e in fb)
 
     sid = (await sessions.create_session()).id
     await report.start(sid, True)

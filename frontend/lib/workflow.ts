@@ -7,7 +7,7 @@ export type NodeDef = { id: string; label: string; kind: "gate" | "agent" | "hum
 export const NODES: NodeDef[] = [
   { id: "danger_gate", label: "Danger check", kind: "gate", lane: "start", desc: "Are you in danger right now?" },
   { id: "location_agent", label: "Location Agent", kind: "agent", lane: "emergency", desc: "Finds where you are" },
-  { id: "twilio_agent", label: "Alert Agent", kind: "agent", lane: "emergency", desc: "Alerts your trusted contact" },
+  { id: "alert_agent", label: "Alert Agent", kind: "agent", lane: "emergency", desc: "Alerts your trusted contact" },
   { id: "intake_agent", label: "Intake Agent", kind: "agent", lane: "report", desc: "Listens and gathers the facts" },
   { id: "drafting_agent", label: "Drafting Agent", kind: "agent", lane: "report", desc: "Writes police and public versions" },
   { id: "user_review", label: "Your review", kind: "human", lane: "report", desc: "You approve before anything is sent" },
@@ -22,7 +22,7 @@ export const NODES: NodeDef[] = [
 
 export const EDGES: [string, string][] = [
   ["danger_gate", "location_agent"],
-  ["location_agent", "twilio_agent"],
+  ["location_agent", "alert_agent"],
   ["danger_gate", "intake_agent"],
   ["intake_agent", "drafting_agent"],
   ["drafting_agent", "user_review"],
@@ -43,7 +43,10 @@ export type NodeState = {
   lastTs?: string;
 };
 
-const nodeOf = (e: AwaazEvent) => e.node || e.agent || "";
+// Sessions recorded before the rename still carry the old id.
+const RENAMED: Record<string, string> = { twilio_agent: "alert_agent" };
+const canon = (id: string | null | undefined) => (id ? RENAMED[id] ?? id : "");
+const nodeOf = (e: AwaazEvent) => canon(e.node || e.agent);
 
 export function deriveNodeStates(events: AwaazEvent[]): Record<string, NodeState> {
   const s: Record<string, NodeState> = {};
@@ -86,7 +89,7 @@ export function deriveNodeStates(events: AwaazEvent[]): Record<string, NodeState
       case "workflow.end":
         if (d.workflow === "emergency") {
           set("location_agent", { status: s.location_agent.status === "error" ? "error" : "done" }, e.ts);
-          set("twilio_agent", { status: "done" }, e.ts);
+          set("alert_agent", { status: "done" }, e.ts);
         }
         if (d.workflow === "report") {
           for (const n of ["police_dispatch_agent", "matching_agent", "gmail_communities", "gmail_authority"])
@@ -133,8 +136,8 @@ export function deriveAgentCards(events: AwaazEvent[]): AgentCard[] {
     let c = runs.get(e.run_id);
     if (e.kind === "agent.start") {
       c = {
-        node: e.node || "",
-        agent: e.agent || "",
+        node: canon(e.node),
+        agent: canon(e.agent),
         run_id: e.run_id,
         model: e.data.model,
         tools: e.data.tools || [],
