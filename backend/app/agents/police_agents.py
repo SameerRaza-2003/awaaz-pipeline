@@ -77,7 +77,7 @@ STATUS_PROMPT = """You are the Police Status Agent of Awaaz. The waiting period 
 1. Call get_complaint_status with the police_ref.
 2. Call evaluate_addressed with the status you got.
 3. ONLY if evaluate_addressed says addressed=false, call trigger_news_escalation with the public_ref.
-4. Return StatusDecision {status, addressed, escalated, reason} with a one-sentence reason."""
+4. Return StatusDecision {status, addressed, escalated, reason} with a one-sentence reason that says "the authorities", never "the police"."""
 
 
 class RefArgs(BaseModel):

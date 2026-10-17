@@ -76,7 +76,7 @@ function Login({ onToken }: { onToken: (t: string) => void }) {
       <form onSubmit={submit} className="w-full max-w-sm space-y-5 rounded-md border border-line bg-surface p-6">
         <div>
           <h1 className="text-title font-semibold">Complaint queue</h1>
-          <p className="mt-1 text-small text-ink-2">For authorised officers. Demo credentials are set on the server.</p>
+          <p className="mt-1 text-small text-ink-2">For the authorities. Demo credentials are set on the server.</p>
         </div>
         <div>
           <label htmlFor="pu" className="text-small font-semibold">
@@ -110,7 +110,7 @@ const FILTERS = [
   ["escalated", "Sent to news"],
 ] as const;
 
-export default function PolicePage() {
+export default function AuthoritiesPage() {
   const [token, setToken] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);

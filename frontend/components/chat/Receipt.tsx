@@ -57,8 +57,8 @@ export function Receipt({ receipt, dueAt, outcome, cancelled, now, busy, health,
 
       <dl className="divide-y divide-line border-y border-line">
         <div className="py-3">
-          <dt className="label">Police</dt>
-          <dd className="mt-1 text-body">{receipt.police_submitted ? "Your complaint is on the police dashboard." : "Submission pending."}</dd>
+          <dt className="label">Authorities</dt>
+          <dd className="mt-1 text-body">{receipt.police_submitted ? "Your complaint is on the authorities dashboard." : "Submission pending."}</dd>
         </div>
         <div className="py-3">
           <dt className="label">Activist groups</dt>
@@ -86,11 +86,11 @@ export function Receipt({ receipt, dueAt, outcome, cancelled, now, busy, health,
         </div>
         {receipt.authority && (
           <div className="py-3">
-            <dt className="label">Authority</dt>
+            <dt className="label">Communities</dt>
             <dd className="mt-1 text-body">
               The social-media version was{" "}
               {receipt.authority.status === "sent" ? "emailed to" : receipt.authority.status === "dry_run" ? "prepared for (dry run)" : "queued for"} the
-              relevant authority.
+              relevant communities.
             </dd>
           </div>
         )}
@@ -104,7 +104,7 @@ export function Receipt({ receipt, dueAt, outcome, cancelled, now, busy, health,
                 "You cancelled the news escalation."
               ) : (
                 <>
-                  If the police record no action, the public summary goes to news outlets in{" "}
+                  If the authorities record no action, the public summary goes to news outlets in{" "}
                   <span className="tabular font-mono font-semibold">{cd.text}</span>.
                   <span className="mt-2 flex flex-wrap gap-x-6 gap-y-1">
                     <button className="btn btn-quiet !px-0" disabled={busy} onClick={onCancel}>

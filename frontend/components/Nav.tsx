@@ -71,11 +71,11 @@ export function Nav() {
       .catch(() => setDown(true));
   }, []);
 
-  // The police tool has its own, plainer header: no survivor navigation, no Quick exit.
-  if (path.startsWith("/police")) {
+  // The authorities tool has its own, plainer header: no survivor navigation, no Quick exit.
+  if (path.startsWith("/authorities")) {
     return (
       <header className="sticky top-0 z-(--z-header) border-b border-line bg-surface">
-        <nav aria-label="Police" className="flex h-(--header-h) items-center gap-4 px-4 lg:px-6">
+        <nav aria-label="Authorities" className="flex h-(--header-h) items-center gap-4 px-4 lg:px-6">
           <Wordmark sub="Complaint queue" />
           <span className="ml-auto">
             <ModeNote health={health} />
@@ -108,8 +108,8 @@ export function Nav() {
             <span className="sm:hidden">{l.short}</span>
           </Link>
         ))}
-        <Link href="/police" className="hidden min-h-11 items-center px-3 text-small text-ink-2 hover:text-ink lg:flex">
-          Police dashboard
+        <Link href="/authorities" className="hidden min-h-11 items-center px-3 text-small text-ink-2 hover:text-ink lg:flex">
+          Authorities dashboard
         </Link>
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <ModeNote health={health} />

@@ -9,15 +9,15 @@ export const NODES: NodeDef[] = [
   { id: "location_agent", label: "Location Agent", kind: "agent", lane: "emergency", desc: "Finds where you are" },
   { id: "alert_agent", label: "Alert Agent", kind: "agent", lane: "emergency", desc: "Alerts your trusted contact" },
   { id: "intake_agent", label: "Intake Agent", kind: "agent", lane: "report", desc: "Listens and gathers the facts" },
-  { id: "drafting_agent", label: "Drafting Agent", kind: "agent", lane: "report", desc: "Writes police and public versions" },
+  { id: "drafting_agent", label: "Drafting Agent", kind: "agent", lane: "report", desc: "Writes the complaint and summary" },
   { id: "user_review", label: "Your review", kind: "human", lane: "report", desc: "You approve before anything is sent" },
-  { id: "police_dispatch_agent", label: "Police Dispatch Agent", kind: "agent", lane: "police", desc: "Files the complaint with police" },
-  { id: "escalation_timer", label: "24-hour timer", kind: "timer", lane: "police", desc: "Waits for police action" },
-  { id: "police_status_agent", label: "Police Status Agent", kind: "agent", lane: "police", desc: "Checks if police acted" },
+  { id: "police_dispatch_agent", label: "Dispatch Agent", kind: "agent", lane: "police", desc: "Files the complaint" },
+  { id: "escalation_timer", label: "24-hour timer", kind: "timer", lane: "police", desc: "Waits for the authorities to act" },
+  { id: "police_status_agent", label: "Status Agent", kind: "agent", lane: "police", desc: "Checks if the authorities acted" },
   { id: "gmail_news", label: "Email · news outlets", kind: "agent", lane: "police", desc: "Escalates if nothing happened" },
   { id: "matching_agent", label: "Matching Agent", kind: "agent", lane: "public", desc: "Picks relevant activist groups" },
   { id: "gmail_communities", label: "Email · activist groups", kind: "agent", lane: "public", desc: "Emails the anonymised case" },
-  { id: "gmail_authority", label: "Email · authority", kind: "agent", lane: "authority", desc: "Sends the social-media post version" },
+  { id: "gmail_authority", label: "Email · communities", kind: "agent", lane: "authority", desc: "Sends the social-media post version" },
 ];
 
 export const EDGES: [string, string][] = [
@@ -46,6 +46,9 @@ export type NodeState = {
 // Sessions recorded before the rename still carry the old id.
 const RENAMED: Record<string, string> = { twilio_agent: "alert_agent" };
 const canon = (id: string | null | undefined) => (id ? RENAMED[id] ?? id : "");
+/** Readable name for an agent or node id, e.g. police_status_agent -> "Authorities status agent". */
+export const displayName = (id: string) =>
+  canon(id).replaceAll("police", "authorities").replaceAll("authority", "communities").replaceAll("_", " ").replace(/^\w/, (c) => c.toUpperCase());
 const nodeOf = (e: AwaazEvent) => canon(e.node || e.agent);
 
 export function deriveNodeStates(events: AwaazEvent[]): Record<string, NodeState> {

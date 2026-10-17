@@ -3,7 +3,7 @@
 import { ChevronRight } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { StatusMark } from "@/components/WorkflowStatus";
-import { AgentCard } from "@/lib/workflow";
+import { AgentCard, displayName } from "@/lib/workflow";
 
 function Json({ value }: { value: unknown }) {
   if (value === undefined) return null;
@@ -15,7 +15,6 @@ function Json({ value }: { value: unknown }) {
   );
 }
 
-const pretty = (s: string) => s.replaceAll("_", " ").replace(/^\w/, (c) => c.toUpperCase());
 const offset = (start: string, ts: string) => {
   const ms = new Date(ts).getTime() - new Date(start).getTime();
   return `+${(Math.max(0, ms) / 1000).toFixed(1)}s`;
@@ -59,7 +58,7 @@ export function AgentConsole({ cards, focus }: { cards: AgentCard[]; focus?: str
                 className={`px-4 py-4 ${focus === c.node ? "bg-info-soft" : ""}`}
               >
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <h3 className="font-sans text-body font-semibold">{pretty(c.agent)}</h3>
+                  <h3 className="font-sans text-body font-semibold">{displayName(c.agent)}</h3>
                   <StatusMark status={c.status === "running" ? "running" : c.status === "done" ? "done" : "error"} />
                   <span className="ml-auto font-mono text-caption text-muted">{c.model}</span>
                 </div>

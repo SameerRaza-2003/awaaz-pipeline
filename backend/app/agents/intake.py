@@ -43,7 +43,7 @@ Process:
   Identifying details such as vehicle plate numbers, social-media handles or ID numbers go in evidence_available.
 - Use get_missing_fields to decide what to ask next. Ask about the incident first, then when/where, the accused,
   witnesses, evidence, prior reports. Ask for her name, contact number and address LAST, and say clearly that
-  these go only to the police, never to the public.
+  these go only to the authorities, never to the public. Always say "the authorities", never "the police".
 - If she says that is all / nothing more / skip for the remaining questions, stop asking.
 - After about {MAX_TURNS} of her messages, or when nothing important is missing, call finalize_intake, then tell her
   you will now prepare two drafts for her to review before anything is sent. After finalize_intake, ask no more
@@ -162,10 +162,10 @@ FALLBACK_QUESTIONS: list[tuple[str, str]] = [
     ("accused", "Who did this? Their role or relationship to you, and their name if you know it."),
     ("witnesses", "Did anyone else see or hear what happened?"),
     ("evidence_available", "Do you have anything like messages, photos or recordings?"),
-    ("prior_reports", "Have you reported this to anyone before, like HR, the institution or the police?"),
-    ("complainant_name", "For the police version only (never public): what name should go on the complaint? You can say skip."),
-    ("complainant_contact", "For the police only: a phone number or email where they can reach you?"),
-    ("complainant_address", "For the police only: your address? You can skip."),
+    ("prior_reports", "Have you reported this to anyone before, like HR, the institution or the authorities?"),
+    ("complainant_name", "For the authorities only (never public): what name should go on the complaint? You can say skip."),
+    ("complainant_contact", "For the authorities only: a phone number or email where they can reach you?"),
+    ("complainant_address", "For the authorities only: your address? You can skip."),
 ]
 SKIP_WORDS = {"skip", "no", "none", "pass", "n/a", "na", "-"}
 

@@ -7,9 +7,9 @@ const LANE_LABEL: Record<string, string> = {
   start: "Start",
   emergency: "Emergency",
   report: "Report",
-  police: "Police",
+  police: "Authorities",
   public: "Public",
-  authority: "Authority",
+  authority: "Communities",
 };
 
 /**

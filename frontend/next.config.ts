@@ -14,6 +14,9 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.*.*", "10.*.*.*", "172.*.*.*"],
   // The browser only talks to this server; API calls are forwarded to the backend,
   // so a phone needs just one address and the backend can stay on localhost.
+  async redirects() {
+    return [{ source: "/police", destination: "/authorities", permanent: false }];
+  },
   async rewrites() {
     return [
       { source: "/api/:path*", destination: `${BACKEND_URL}/api/:path*` },

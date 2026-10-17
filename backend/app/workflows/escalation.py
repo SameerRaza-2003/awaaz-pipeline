@@ -164,7 +164,7 @@ async def run_job(job_id: int) -> dict[str, Any]:
         return {"triggered": True, "message": "news escalation scheduled; the Gmail Agent will send it next"}
 
     state = {"police_ref": r.police_ref, "public_ref": r.public_ref, "trigger": trigger}
-    await bus.publish(sid, "status", node="police_status_agent", data={"message": f"Police Status Agent checking {r.police_ref}…"}, also=STREAMS)
+    await bus.publish(sid, "status", node="police_status_agent", data={"message": f"Authorities Status Agent checking {r.police_ref}…"}, also=STREAMS)
     decision: dict[str, Any] | None = None
     try:
         res = await runner.run(

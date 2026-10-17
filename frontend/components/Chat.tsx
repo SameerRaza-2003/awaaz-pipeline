@@ -330,7 +330,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
     const tools = new Set(events.filter((e) => e.node === "drafting_agent" && e.kind === "tool.start").map((e) => e.data.tool));
     return [
       { label: "Finding anything that could identify you or others", done: tools.has("extract_identifiers") || tools.has("pii_scan") },
-      { label: "Writing the police complaint and the public summary", done: tools.has("save_drafts") },
+      { label: "Writing the complaint for the authorities and the public summary", done: tools.has("save_drafts") },
       { label: "Checking the public summary for personal details", done: tools.has("review_public_text") },
     ];
   }, [events]);

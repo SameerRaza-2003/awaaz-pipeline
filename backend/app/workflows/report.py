@@ -195,7 +195,7 @@ async def run_drafting(session_id: str, instruction: str | None = None, target: 
     if drafts is None:
         police_text = previous["police_text"] if previous else police_template(record)
         drafts = {"police_text": police_text, "public_text": previous["public_text"] if previous else "", "public_clean": bool(previous and previous.get("public_clean")), "pii_findings": []}
-        await bus.publish(session_id, "step", node="drafting_agent", data={"fallback": True, "message": "Drafting Agent failed; police text built from the record"})
+        await bus.publish(session_id, "step", node="drafting_agent", data={"fallback": True, "message": "Drafting Agent failed; authorities text built from the record"})
     if target == "police" and previous:
         # A police-only revision never changes the approved public text.
         drafts["public_text"], drafts["public_clean"], drafts["pii_findings"] = previous["public_text"], previous.get("public_clean", False), previous.get("pii_findings", [])
@@ -291,13 +291,13 @@ async def dispatch_all(session_id: str, work: dict[str, Any]) -> dict[str, Any]:
             return_exceptions=True,
         )
         if isinstance(police_res, BaseException):
-            await bus.publish(session_id, "error", node="police_dispatch_agent", data={"message": f"Police submission failed: {police_res}"})
+            await bus.publish(session_id, "error", node="police_dispatch_agent", data={"message": f"Authorities submission failed: {police_res}"})
             police_res = {"police_submitted": False}
         if isinstance(community_res, BaseException):
             await bus.publish(session_id, "error", node="gmail_communities", data={"message": f"Community outreach failed: {community_res}"})
             community_res = {"communities": []}
         if isinstance(authority_res, BaseException):
-            await bus.publish(session_id, "error", node="gmail_authority", data={"message": f"Authority email failed: {authority_res}"})
+            await bus.publish(session_id, "error", node="gmail_authority", data={"message": f"Communities email failed: {authority_res}"})
             authority_res = {"authority": None}
         receipt.update(police_res)
         receipt.update(community_res)
@@ -384,11 +384,11 @@ async def community_branch(session_id: str, work: dict[str, Any]) -> dict[str, A
 async def authority_branch(session_id: str, work: dict[str, Any]) -> dict[str, Any]:
     """Social-media-post version of the approved public text, sent to the (demo) authority inbox."""
     if not work["public_clean"]:
-        await bus.publish(session_id, "step", node="gmail_authority", data={"status": "skipped", "message": "Public report on hold: nothing sent to the authority"})
+        await bus.publish(session_id, "step", node="gmail_authority", data={"status": "skipped", "message": "Public report on hold: nothing sent to the communities"})
         return {"authority": None}
     to = get_settings().authority_recipient
     if not to:
-        await bus.publish(session_id, "step", node="gmail_authority", data={"status": "skipped", "message": "No authority email configured (AUTHORITY_EMAIL)"})
+        await bus.publish(session_id, "step", node="gmail_authority", data={"status": "skipped", "message": "No communities email configured (AUTHORITY_EMAIL)"})
         return {"authority": None}
     results = await send_emails(session_id, "authority", work, [{"name": "Authority (demo)", "email": to}])
     status = next((r["status"] for r in results if r["to"] == to), "unknown")
