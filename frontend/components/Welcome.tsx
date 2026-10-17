@@ -15,8 +15,8 @@ export function Welcome({ onContinue, onEmergency }: { onContinue: () => void; o
     <div className="flex min-h-0 flex-1 flex-col lg:overflow-y-auto">
       <div className="relative flex flex-[1_0_auto] flex-col overflow-hidden">
         {/* Soft shapes give the band depth without competing with the text. */}
-        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-sunken" aria-hidden />
-        <div className="pointer-events-none absolute -bottom-40 right-[8%] hidden h-[34rem] w-[34rem] rounded-full bg-sunken xl:block" aria-hidden />
+        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sunken" aria-hidden />
+        <div className="pointer-events-none absolute -bottom-48 left-[2%] hidden h-[34rem] w-[34rem] rounded-full bg-sunken xl:block" aria-hidden />
         <Image
           src="/solidarity.svg"
           alt=""
@@ -24,7 +24,7 @@ export function Welcome({ onContinue, onEmergency }: { onContinue: () => void; o
           height={581}
           unoptimized
           priority
-          className="pointer-events-none absolute right-[3%] top-1/2 hidden w-[min(25vw,420px)] -translate-y-1/2 xl:block"
+          className="pointer-events-none absolute bottom-0 left-[3%] hidden w-[min(calc(50vw-340px),420px)] xl:block"
         />
 
         <div className="relative mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-5 pb-6 pt-8 sm:px-8 lg:pt-10">
