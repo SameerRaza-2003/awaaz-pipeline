@@ -33,7 +33,7 @@ export function SetupDrawer({
     api<SessionInfo>(`/api/sessions/${sessionId}`)
       .then((s) => {
         setCountry(s.country);
-        setLocale(s.locale === "ur" ? "ur" : "en");
+        setLocale(s.locale === "roman" ? "roman" : "en");
         setSignedIn(!!s.signed_in);
         if (s.trusted_contact) {
           setName(s.trusted_contact.is_default ? "" : s.trusted_contact.name);
@@ -299,7 +299,7 @@ export function SetupDrawer({
                   onChange={(e) => setLocale(e.target.value)}
                 >
                   <option value="en">English</option>
-                  <option value="ur">اردو</option>
+                  <option value="roman">Roman Urdu</option>
                 </select>
               </div>
             </fieldset>

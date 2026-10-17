@@ -17,7 +17,7 @@ def new_session_id() -> str:
 async def create_session(locale: str = "en", country: str | None = None, user_id: str | None = None) -> SessionRow:
     row = SessionRow(
         id=new_session_id(),
-        locale=locale,
+        locale=locale if locale in ("en", "roman") else "en",
         country=(country or get_settings().default_country).upper(),
         phase="gate",
         user_id=user_id,
@@ -49,7 +49,7 @@ async def update_settings(session_id: str, *, country: str | None, locale: str |
         if country:
             row.country = country.upper()
         if locale:
-            row.locale = locale
+            row.locale = locale if locale in ("en", "roman") else "en"
         await db.commit()
 
 

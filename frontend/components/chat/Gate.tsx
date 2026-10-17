@@ -47,9 +47,6 @@ export function Gate(p: Props) {
       <div className="flex flex-1 flex-col justify-center px-5 pb-6 pt-8 sm:px-8">
         <p className="label">Private and anonymous</p>
         <h1 className="mt-3 text-display font-semibold sm:text-hero">Are you in danger right now?</h1>
-        <p lang="ur" dir="rtl" className="urdu mt-2 text-lead text-ink-2">
-          کیا آپ اس وقت خطرے میں ہیں؟
-        </p>
       </div>
 
       <div className="border-t border-line bg-surface px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-8">
@@ -61,7 +58,7 @@ export function Gate(p: Props) {
               Yes, I need help now
             </button>
             <button className="btn btn-secondary w-full !min-h-14" disabled={p.busy} onClick={p.onNo}>
-              No, I am not in danger
+              No, I want to report
             </button>
             <p className="pt-1 text-small text-ink-2">
               {p.contactName ? (

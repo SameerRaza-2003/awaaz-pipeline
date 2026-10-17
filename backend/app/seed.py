@@ -62,11 +62,30 @@ NEWS = [
 
 
 def _addr(prefix: str, i: int) -> str:
-    base = get_settings().seed_email_base.strip()
+    s = get_settings()
+    base = {"community": s.community_email_base, "news": s.news_email_base}.get(prefix, "").strip() or s.seed_email_base.strip()
     if base and "@" in base:
         user, domain = base.split("@", 1)
-        return f"{user}+{prefix}{i}@{domain}"
+        return f"{user.split('+')[0]}+{prefix}{i}@{domain}"
     return f"{prefix}{i}@example.org"
+
+
+async def sync_emails() -> int:
+    """Point existing demo organisations at the configured inboxes (runs on every start). Returns rows changed."""
+    changed = 0
+    async with SessionLocal() as db:
+        for i, (name, _, _) in enumerate(COMMUNITIES, 1):
+            row = await db.scalar(select(Community).where(Community.name == name))
+            if row and row.email != _addr("community", i):
+                row.email = _addr("community", i)
+                changed += 1
+        for i, (name, _) in enumerate(NEWS, 1):
+            row = await db.scalar(select(NewsAgency).where(NewsAgency.name == name))
+            if row and row.email != _addr("news", i):
+                row.email = _addr("news", i)
+                changed += 1
+        await db.commit()
+    return changed
 
 
 async def seed(reset: bool = False) -> dict:

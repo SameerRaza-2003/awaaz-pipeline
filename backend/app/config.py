@@ -88,6 +88,10 @@ class Settings(BaseSettings):
     enable_demo_routes: bool = True
     default_country: str = "PK"
     seed_email_base: str = ""
+    # Inboxes for the demo organisations. Each group gets its own plus-address (you+community1@...), so every email
+    # lands in this one inbox while the one-email-per-recipient rule still holds. Fall back to SEED_EMAIL_BASE.
+    community_email_base: str = ""
+    news_email_base: str = ""
     police_api_url: str = ""  # empty = call the in-process police service over ASGI
 
     data_dir: Path = ROOT / "backend" / "data"

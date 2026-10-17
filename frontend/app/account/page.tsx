@@ -28,8 +28,11 @@ function AuthForm({ onDone }: { onDone: () => void }) {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     setErr(null);
+    // A failed attempt must never leave someone signed in as whoever used this device before.
+    auth.forget();
     try {
       const r = await api<{ token: string; username: string }>(mode === "login" ? "/api/auth/login" : "/api/auth/register", { body: { username, password } });
       auth.set(r, remember);
@@ -141,7 +144,7 @@ function ProfileForm({ profile, onSaved, onSignOut }: { profile: Profile; onSave
   const [phone, setPhone] = useState(profile.trusted_contact?.phone || "");
   const [discord, setDiscord] = useState("");
   const [country, setCountry] = useState(profile.country || "PK");
-  const [locale, setLocale] = useState(profile.locale || "en");
+  const [locale, setLocale] = useState(profile.locale === "roman" ? "roman" : "en");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -248,7 +251,7 @@ function ProfileForm({ profile, onSaved, onSignOut }: { profile: Profile; onSave
             </label>
             <select id="p-lang" className="field mt-1" value={locale} onChange={(e) => setLocale(e.target.value)}>
               <option value="en">English</option>
-              <option value="ur">اردو</option>
+              <option value="roman">Roman Urdu</option>
             </select>
           </div>
         </fieldset>
@@ -295,10 +298,12 @@ function ProfileForm({ profile, onSaved, onSignOut }: { profile: Profile; onSave
 export default function AccountPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [offline, setOffline] = useState(false);
   const router = useRouter();
 
   const load = useCallback(async () => {
     setLoading(true);
+    setOffline(false);
     if (!auth.token()) {
       setProfile(null);
       setLoading(false);
@@ -307,7 +312,8 @@ export default function AccountPage() {
     try {
       setProfile(await api<Profile>("/api/me"));
     } catch (e) {
-      if (e instanceof ApiError && e.status === 401) auth.clear();
+      if (e instanceof ApiError && e.status === 401) auth.forget();
+      else setOffline(true); // still signed in, the server just did not answer
       setProfile(null);
     } finally {
       setLoading(false);
@@ -338,7 +344,26 @@ export default function AccountPage() {
 
   return (
     <div className="scroll-thin min-h-0 flex-1 overflow-y-auto px-5 py-10 sm:py-14">
-      {loading ? null : profile ? (
+      {loading ? null : offline ? (
+        <div className="mx-auto w-full max-w-md" role="alert">
+          <h1 className="text-title font-semibold">Can&apos;t reach Awaaz right now</h1>
+          <p className="mt-2 text-body text-ink-2">You are still signed in as {auth.get()?.username}. Your account will show once the server answers.</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button className="btn btn-primary" onClick={load}>
+              Try again
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                auth.forget();
+                setOffline(false);
+              }}
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      ) : profile ? (
         <ProfileForm
           profile={profile}
           onSaved={setProfile}

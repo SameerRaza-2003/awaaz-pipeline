@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 const AGENTS: [string, string][] = [
   ["Location Agent", "Reads the position her phone shares, looks up the street address and builds a map link."],
   ["Alert Agent", "Writes a short alert and sends it to her trusted contact by text, call and Discord. If it fails, a fixed template sends the same alert."],
-  ["Intake Agent", "Asks one gentle question at a time, in Urdu, Roman Urdu or English. Any question can be skipped."],
+  ["Intake Agent", "Asks one gentle question at a time, in Roman Urdu or English. Any question can be skipped."],
   ["Drafting Agent", "Writes the full police complaint and a public summary, and rewrites the summary until it passes the privacy checks."],
   ["Matching Agent", "Compares the anonymised case with activist groups and picks only the close matches."],
   ["Email Agent", "Sends the public summary, one recipient per email: first to matched groups, later to news outlets if needed."],
