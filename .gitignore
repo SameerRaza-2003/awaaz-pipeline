@@ -17,3 +17,4 @@ evals/results/
 backend/data/
 frontend/.next-*/
 frontend/certificates/
+docs/ui-shots/

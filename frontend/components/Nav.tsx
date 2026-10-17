@@ -6,34 +6,33 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, auth, Health, quickExit } from "@/lib/api";
 
-const LINKS: { href: string; label: string; short?: string }[] = [
-  { href: "/", label: "Home" },
-  { href: "/about", label: "How it works", short: "About" },
-  { href: "/police", label: "Police" },
-];
-
-function ModePill({ health, down }: { health: Health | null; down: boolean }) {
+function ModeNote({ health, down }: { health: Health | null; down: boolean }) {
   if (down)
     return (
-      <span className="rounded-full bg-danger-soft px-3 py-1.5 text-sm font-medium text-danger" role="alert">
-        Server unreachable · call 15
+      <span className="text-caption font-semibold text-danger-ink" role="alert">
+        Server unreachable. Call 15.
       </span>
     );
-  if (!health) return null;
-  const label = health.outbound_mode === "live" ? "Live" : health.outbound_mode === "sandbox" ? "Sandbox" : "Dry run";
-  const tone = health.outbound_mode === "live" ? "bg-ok-soft text-ok" : "bg-warn-soft text-warn";
-  const title =
-    health.outbound_mode === "dry_run"
-      ? "Nothing is sent to real people"
-      : health.outbound_mode === "sandbox"
-        ? "Messages only go to allow-listed test recipients"
-        : "Messages are sent to real recipients";
+  if (!health || health.outbound_mode === "live") return null;
   return (
-    <span className={`hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium sm:inline-flex ${tone}`} title={title}>
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {label}
-      {!health.llm_configured && " · no AI key"}
+    <span
+      className="hidden text-caption text-muted lg:inline"
+      title={health.outbound_mode === "dry_run" ? "Nothing is sent to real people" : "Messages only go to allow-listed test recipients"}
+    >
+      {health.outbound_mode === "dry_run" ? "Dry run: nothing is sent" : "Sandbox: test recipients only"}
     </span>
+  );
+}
+
+function Wordmark({ sub }: { sub?: string }) {
+  return (
+    <Link href="/" className="mr-2 flex min-h-11 items-center gap-2 sm:mr-6" aria-label="Awaaz home">
+      <span className="font-heading text-title font-semibold leading-none tracking-tight">Awaaz</span>
+      <span className="urdu hidden text-small leading-none text-muted sm:inline" lang="ur">
+        آواز
+      </span>
+      {sub && <span className="ml-1 border-l border-line pl-3 text-small font-semibold text-ink-2">{sub}</span>}
+    </Link>
   );
 }
 
@@ -60,50 +59,64 @@ export function Nav() {
       .catch(() => setDown(true));
   }, []);
 
+  // The police tool has its own, plainer header: no survivor navigation, no Quick exit.
+  if (path.startsWith("/police")) {
+    return (
+      <header className="sticky top-0 z-(--z-header) border-b border-line bg-surface">
+        <nav aria-label="Police" className="flex h-(--header-h) items-center gap-4 px-4 lg:px-6">
+          <Wordmark sub="Complaint queue" />
+          <span className="ml-auto">
+            <ModeNote health={health} down={down} />
+          </span>
+        </nav>
+      </header>
+    );
+  }
+
+  const links = [
+    { href: "/", label: "Home", short: "Home" },
+    { href: "/about", label: "How it works", short: "About" },
+  ];
+
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur">
-      <nav className="mx-auto flex h-16 max-w-[1560px] items-center gap-1 px-3 sm:h-20 sm:gap-1.5 sm:px-6">
-        <Link href="/" className="mr-1 flex shrink-0 items-center gap-3 sm:mr-8">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-lg font-bold text-accent-ink sm:h-11 sm:w-11 sm:text-xl" aria-hidden>
-            A
-          </span>
-          <span className="hidden flex-col leading-tight sm:flex">
-            <span className="text-2xl font-semibold tracking-tight">Awaaz</span>
-            <span className="urdu hidden text-base leading-none text-muted sm:inline">آواز</span>
-          </span>
-        </Link>
-        {LINKS.map((l) => (
+    <header className="sticky top-0 z-(--z-header) border-b border-line bg-paper">
+      <nav aria-label="Main" className="mx-auto flex h-(--header-h) w-full max-w-screen-2xl items-center gap-1 px-3 sm:px-6">
+        <Wordmark />
+        {links.map((l) => (
           <Link
             key={l.href}
             href={l.href}
-            className={`whitespace-nowrap rounded-lg px-2 py-2 text-sm transition-colors sm:px-3.5 sm:py-2.5 sm:text-base ${
-              path === l.href ? "bg-surface-3 font-medium text-ink" : "text-ink-2 hover:bg-surface-2"
+            aria-current={path === l.href ? "page" : undefined}
+            className={`flex min-h-11 items-center whitespace-nowrap px-2 text-small sm:px-3 ${
+              path === l.href ? "font-semibold text-ink underline decoration-2 underline-offset-8" : "text-ink-2 hover:text-ink"
             }`}
           >
-            {l.short ? (
-              <>
-                <span className="hidden sm:inline">{l.label}</span>
-                <span className="sm:hidden">{l.short}</span>
-              </>
-            ) : (
-              l.label
-            )}
+            <span className="hidden sm:inline">{l.label}</span>
+            <span className="sm:hidden">{l.short}</span>
           </Link>
         ))}
-        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
-          <ModePill health={health} down={down} />
+        <Link href="/police" className="hidden min-h-11 items-center px-3 text-small text-ink-2 hover:text-ink lg:flex">
+          Police dashboard
+        </Link>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <ModeNote health={health} down={down} />
           <Link
             href="/account"
-            className={`btn ${path === "/account" ? "btn-ghost" : "btn-quiet"} max-sm:!min-h-9 max-sm:!px-2.5`}
-            title={user ? `Signed in as ${user}` : "Optional account to save your trusted contact"}
+            aria-label={user ? `Account: ${user}` : "Sign in"}
+            aria-current={path === "/account" ? "page" : undefined}
+            className="flex min-h-11 min-w-11 items-center justify-center gap-2 px-2 text-small text-ink-2 hover:text-ink"
           >
-            <UserRound size={17} aria-hidden />
+            <UserRound size={20} strokeWidth={1.75} aria-hidden />
             <span className="hidden max-w-32 truncate sm:inline">{user ?? "Sign in"}</span>
           </Link>
-          <button onClick={quickExit} className="btn btn-ghost max-sm:!min-h-9 max-sm:!px-2.5" title="Leave this site immediately and clear this session">
-            <LogOut size={17} aria-hidden />
-            <span className="hidden sm:inline">Quick exit</span>
-            <span className="sm:hidden">Exit</span>
+          <button
+            onClick={quickExit}
+            className="btn btn-secondary btn-compact !min-h-11"
+            title="Leaves this site at once and clears this session. Shortcut: press Esc twice."
+          >
+            <LogOut size={18} strokeWidth={1.75} aria-hidden />
+            <span>Exit</span>
+            <span className="sr-only">: leave this site now</span>
           </button>
         </div>
       </nav>

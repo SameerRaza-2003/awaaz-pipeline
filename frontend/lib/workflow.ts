@@ -107,7 +107,7 @@ export function deriveNodeStates(events: AwaazEvent[]): Record<string, NodeState
   return s;
 }
 
-export type ToolCall = { tool: string; args?: any; result?: any; error?: string; duration_ms?: number; ts: string };
+export type ToolCall = { tool: string; args?: any; result?: any; error?: string; duration_ms?: number; ts: string; redacted?: boolean };
 
 export type AgentCard = {
   node: string;
@@ -150,13 +150,20 @@ export function deriveAgentCards(events: AwaazEvent[]): AgentCard[] {
       continue;
     }
     if (!c) continue;
-    if (e.kind === "tool.start") c.calls.push({ tool: e.data.tool, args: e.data.args, ts: e.ts });
+    // After a report is sent the server deletes the interview's tool-call details for privacy.
+    if (e.kind === "tool.start") c.calls.push({ tool: e.data.redacted ? "deleted for privacy" : e.data.tool, args: e.data.args, ts: e.ts, redacted: !!e.data.redacted });
+    if (e.kind === "tool.end" && e.data.redacted) {
+      const open = [...c.calls].reverse().find((t) => t.result === undefined && !t.error);
+      if (open) Object.assign(open, { result: "Details were deleted after the report was sent.", redacted: true });
+      continue;
+    }
     if (e.kind === "tool.end") {
       const open = [...c.calls].reverse().find((t) => t.tool === e.data.tool && t.result === undefined && !t.error);
       if (open) Object.assign(open, { result: e.data.result, error: e.data.error, duration_ms: e.data.duration_ms });
       else c.calls.push({ tool: e.data.tool, result: e.data.result, error: e.data.error, ts: e.ts });
     }
     if (e.kind === "llm.message") {
+      if (e.data.redacted) continue;
       const t = [e.data.text, e.data.action].filter(Boolean).join(" · ");
       if (t) c.messages.push(t);
     }
@@ -173,7 +180,7 @@ export function deriveAgentCards(events: AwaazEvent[]): AgentCard[] {
 }
 
 export function fmtCountdown(dueIso: string | undefined, now: number): { text: string; overdue: boolean } {
-  if (!dueIso) return { text: "—", overdue: false };
+  if (!dueIso) return { text: "no deadline", overdue: false };
   const ms = new Date(dueIso).getTime() - now;
   const overdue = ms <= 0;
   const abs = Math.abs(ms);

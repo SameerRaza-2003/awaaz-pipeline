@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowRight, LogIn, ShieldAlert, ShieldCheck, UserPlus } from "lucide-react";
 import Link from "next/link";
+import { EmergencyNumbers } from "@/components/chat/parts";
 
 /**
  * First screen. An account is optional, and help is never behind a login:
@@ -9,40 +9,36 @@ import Link from "next/link";
  */
 export function Welcome({ onContinue, onEmergency }: { onContinue: () => void; onEmergency: () => void }) {
   return (
-    <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
-      <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center gap-6 px-4 py-8">
-        <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-semibold tracking-tight">Welcome to Awaaz</h1>
-          <p className="text-ink-2">Get help fast, or report harassment safely. Private, and on your terms.</p>
-        </div>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-5 pb-6 pt-10 sm:px-8">
+        <p className="label">Awaaz · آواز</p>
+        <h1 className="mt-3 text-display font-semibold sm:text-hero">Help when you need it. A report when you are ready.</h1>
+        <p className="mt-4 text-lead text-ink-2">
+          Awaaz alerts someone you trust with your location in one tap, or helps you report harassment to the police without exposing who you are.
+        </p>
+      </div>
 
-        <button className="btn btn-danger w-full !min-h-16 text-lg" onClick={onEmergency}>
-          <ShieldAlert size={22} aria-hidden />
-          I&apos;m in danger: get help now
-        </button>
-        <p className="-mt-3 text-center text-xs text-muted">No login needed. Your trusted contact is alerted with your location, after a 3-second chance to cancel.</p>
-
-        <div className="card space-y-3 p-5">
-          <div className="grid grid-cols-2 gap-2">
+      <div className="border-t border-line bg-surface">
+        <div className="mx-auto w-full max-w-xl space-y-4 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-8">
+          <div>
+            <button className="btn btn-danger w-full !min-h-16 text-lead" onClick={onEmergency}>
+              I am in danger: get help now
+            </button>
+            <p className="mt-2 text-small text-ink-2">No login needed. You get three seconds to cancel before your contact is alerted.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <Link href="/account?next=/" className="btn btn-primary">
-              <LogIn size={16} aria-hidden /> Sign in
+              Sign in
             </Link>
-            <Link href="/account?mode=register&next=/" className="btn btn-ghost">
-              <UserPlus size={16} aria-hidden /> Create account
+            <Link href="/account?mode=register&next=/" className="btn btn-secondary">
+              Create account
             </Link>
           </div>
-          <p className="text-xs text-muted">
-            An account saves your trusted contact, so help is one tap away. Just a username and password: no email or real name.
-          </p>
           <button className="btn btn-quiet w-full" onClick={onContinue}>
-            Continue without an account <ArrowRight size={16} aria-hidden />
+            Continue without an account
           </button>
+          <EmergencyNumbers />
         </div>
-
-        <p className="flex items-start justify-center gap-2 text-center text-xs text-muted">
-          <ShieldCheck size={14} className="mt-0.5 shrink-0" aria-hidden />
-          Quick exit (top right) leaves this site instantly and signs you out.
-        </p>
       </div>
     </div>
   );

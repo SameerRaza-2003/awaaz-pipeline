@@ -1,27 +1,13 @@
 "use client";
 
-import {
-  AlertTriangle,
-  ArrowUp,
-  Check,
-  Copy,
-  FileText,
-  Globe2,
-  Loader2,
-  MapPin,
-  MessageSquare,
-  Minus,
-  Phone,
-  RotateCcw,
-  Send,
-  Settings2,
-  ShieldAlert,
-  ShieldCheck,
-  X,
-} from "lucide-react";
+import { ArrowUp, Check, Loader2, RotateCcw, Settings2, ShieldAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Emergency, EmergencyState } from "@/components/chat/Emergency";
+import { Gate, HelpProps, HelpStates, helpActive } from "@/components/chat/Gate";
+import { EmergencyNumbers, ICON, Message, Msg, STROKE, Typing, hasUrdu } from "@/components/chat/parts";
+import { Receipt as ReceiptView } from "@/components/chat/Receipt";
+import { PrivacyEvidence, Review } from "@/components/chat/Review";
 import { api, ApiError, AwaazEvent, Health, Receipt, SessionInfo, store } from "@/lib/api";
-import { fmtCountdown } from "@/lib/workflow";
 
 type Props = {
   sessionId: string;
@@ -31,108 +17,21 @@ type Props = {
   onOpenSetup: () => void;
 };
 
-type Msg = { role: "user" | "assistant"; text: string };
+const LANGS = [
+  { id: "en", label: "English", placeholder: "Write your answer" },
+  { id: "roman", label: "Roman Urdu", placeholder: "Apna jawab likhein" },
+  { id: "ur", label: "اردو", placeholder: "اپنا جواب لکھیں" },
+] as const;
+type Lang = (typeof LANGS)[number]["id"];
 
-const hasUrdu = (t: string) => /[؀-ۿ]/.test(t);
-
-const REPORT_STEPS = ["Check-in", "Your account", "Review", "Sent"];
-const EMERGENCY_STEPS = ["Check-in", "Alerting", "Tracking", "Safe"];
-
-function stepsFor(phase: string): { steps: string[]; current: number } | null {
-  switch (phase) {
-    case "ask_report":
-      return { steps: REPORT_STEPS, current: 0 };
-    case "intake":
-      return { steps: REPORT_STEPS, current: 1 };
-    case "drafting":
-    case "review":
-      return { steps: REPORT_STEPS, current: 2 };
-    case "sending":
-    case "sent":
-      return { steps: REPORT_STEPS, current: 3 };
-    case "emergency":
-      return { steps: EMERGENCY_STEPS, current: 2 };
-    case "safe":
-      return { steps: EMERGENCY_STEPS, current: 3 };
-    default:
-      return null;
-  }
-}
-
-function Stepper({ phase }: { phase: string }) {
-  const s = stepsFor(phase);
-  if (!s) return null;
-  return (
-    <ol className="flex items-center gap-1.5 overflow-x-auto px-4 pb-3 text-xs" aria-label="Progress">
-      {s.steps.map((label, i) => {
-        const done = i < s.current || (i === s.current && (phase === "sent" || phase === "safe"));
-        const active = i === s.current && !done;
-        return (
-          <li key={label} className="flex shrink-0 items-center gap-1.5">
-            <span
-              className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${
-                done ? "bg-accent text-accent-ink" : active ? "border border-accent text-accent" : "border border-line-strong text-muted"
-              }`}
-            >
-              {done ? <Check size={11} strokeWidth={3} /> : i + 1}
-            </span>
-            <span className={active ? "font-medium text-ink" : done ? "text-ink-2" : "text-muted"}>{label}</span>
-            {i < s.steps.length - 1 && <span className="mx-1 h-px w-5 bg-line-strong" />}
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-function Bubble({ m }: { m: Msg }) {
-  const mine = m.role === "user";
-  const urdu = hasUrdu(m.text);
-  return (
-    <div className={`rise flex ${mine ? "justify-end" : "justify-start"}`}>
-      <div
-        dir="auto"
-        className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed ${
-          mine ? "rounded-br-md bg-accent text-accent-ink" : "rounded-bl-md border border-line bg-surface text-ink"
-        } ${urdu ? "urdu" : ""}`}
-      >
-        {m.text}
-      </div>
-    </div>
-  );
-}
-
-type RowState = "pending" | "done" | "failed" | "off";
-
-function StatusRow({ icon: Icon, label, detail, state }: { icon: typeof Phone; label: string; detail: string; state: RowState }) {
-  return (
-    <li className="flex items-center gap-3 py-2.5">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-ink-2">
-        <Icon size={16} aria-hidden />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium">{label}</div>
-        <div className="truncate text-xs text-muted">{detail}</div>
-      </div>
-      <span className="shrink-0" aria-label={state}>
-        {state === "pending" && <Loader2 size={16} className="animate-spin text-run" />}
-        {state === "done" && <Check size={16} className="text-ok" />}
-        {state === "failed" && <X size={16} className="text-danger" />}
-        {state === "off" && <Minus size={16} className="text-muted" />}
-      </span>
-    </li>
-  );
-}
-
-function outboundDetail(d: any, sentLabel: string): { state: RowState; detail: string } {
-  if (!d) return { state: "pending", detail: "Working…" };
-  if (d.status === "sent") return { state: "done", detail: sentLabel };
-  if (d.status === "dry_run") return { state: "done", detail: `${sentLabel} (dry run)` };
-  if (d.status === "blocked") return { state: "off", detail: "Blocked by the sandbox allowlist" };
-  if (d.status === "skipped") return { state: "off", detail: "Not set up on this server" };
-  if (d.status === "duplicate") return { state: "done", detail: "Already sent" };
-  return { state: "failed", detail: d.error || "Failed" };
-}
+const STEP: Record<string, [number, string]> = {
+  ask_report: [1, "Check-in"],
+  intake: [2, "What happened"],
+  drafting: [3, "Review"],
+  review: [3, "Review"],
+  sending: [4, "Sent"],
+  sent: [4, "Sent"],
+};
 
 export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: Props) {
   const [session, setSession] = useState<SessionInfo | null>(null);
@@ -149,7 +48,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
   const [policeText, setPoliceText] = useState("");
   const [revise, setRevise] = useState<{ target: "public" | "police"; text: string } | null>(null);
   const [cancelled, setCancelled] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [lang, setLang] = useState<Lang>("en");
   const [now, setNow] = useState(() => Date.now());
   const watchId = useRef<number | null>(null);
   const lastPost = useRef(0);
@@ -161,6 +60,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
       const s = await api<SessionInfo>(`/api/sessions/${sessionId}`);
       setSession(s);
       if (s.drafts) setPoliceText((p) => p || s.drafts!.police_text);
+      if (s.locale === "ur" || s.locale === "roman" || s.locale === "en") setLang(s.locale);
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) onNewSession();
     }
@@ -188,15 +88,12 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
   }, []);
 
   const phase = session?.phase ?? "loading";
-  const transcript: Msg[] = useMemo(
-    () => [...(session?.transcript ?? []), ...(pending ? [pending] : [])],
-    [session?.transcript, pending],
-  );
+  const transcript: Msg[] = useMemo(() => [...(session?.transcript ?? []), ...(pending ? [pending] : [])], [session?.transcript, pending]);
 
   useEffect(() => {
     const el = scroller.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [transcript.length, busy, phase, locDenied, dangerPrompt, events.length]);
+  }, [transcript.length, busy, phase, dangerPrompt]);
 
   useEffect(
     () => () => {
@@ -253,8 +150,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
     let r = await attempt(true, 7000);
     if (!("coords" in r) && r.code !== r.PERMISSION_DENIED) r = await attempt(false, 6000);
     if ("coords" in r) return { pos: r, reason: "" };
-    if (r.code === r.PERMISSION_DENIED)
-      return { pos: null, reason: "Location permission is off for this site. You can allow it in the browser's site settings." };
+    if (r.code === r.PERMISSION_DENIED) return { pos: null, reason: "Location permission is off for this site. You can allow it in the browser's site settings." };
     return { pos: null, reason: "Your phone could not get a location fix (no GPS signal, or location services are off)." };
   };
 
@@ -279,7 +175,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
       }
     });
 
-  // Coming from the welcome screen's emergency button: start the alert straight away.
+  // Coming from the welcome screen's emergency button: arm the 3-second countdown.
   useEffect(() => {
     if (phase === "gate" && store.get("awaaz_autohelp")) {
       store.del("awaaz_autohelp");
@@ -287,7 +183,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
     }
   }, [phase]);
 
-  // One-tap alerts wait 3 seconds so an accidental tap can be cancelled.
+  // One-tap shortcuts wait 3 seconds so an accidental tap can be cancelled. The explicit "Yes" answer does not.
   useEffect(() => {
     if (armed === null) return;
     if (armed <= 0) {
@@ -321,24 +217,39 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
       await refresh();
     });
 
-  const emergency = useMemo(() => {
-    const out: { location: any; sms: any; call: any; discord: any; started: boolean; finished: boolean; warning: string | null; updates: number } = {
-      location: null, sms: null, call: null, discord: null, started: false, finished: false, warning: null, updates: 0,
+  const em: EmergencyState = useMemo(() => {
+    const out: EmergencyState = {
+      location: null,
+      sms: null,
+      call: null,
+      discord: null,
+      started: false,
+      finished: false,
+      warning: null,
+      updates: 0,
+      alertAt: null,
+      lastLocationAt: null,
     };
     for (const e of events) {
       if (e.kind === "workflow.start" && e.data.workflow === "emergency") out.started = true;
-      if (e.kind === "status" && e.data.location) out.location = e.data.location;
+      if (e.kind === "status" && e.data.location) {
+        out.location = e.data.location;
+        out.lastLocationAt = e.data.location.captured_at || e.ts;
+      }
       if (e.kind === "outbound" && e.agent !== "setup") {
         const k = e.data.kind as string;
         if (e.agent === "tracking_updater") {
-          // Count each update once (it may go to SMS and Discord), and not the final "safe" message.
-          if (e.data.status !== "duplicate" && String(e.data.body || "").startsWith("Awaaz location update")) {
-            const n = Number(String(e.data.body).match(/update (\d+)/)?.[1] || 0);
-            out.updates = Math.max(out.updates, n);
+          const body = String(e.data.body || "");
+          if (e.data.status !== "duplicate" && body.startsWith("Awaaz location update")) {
+            out.updates = Math.max(out.updates, Number(body.match(/update (\d+)/)?.[1] || 0));
+            out.lastLocationAt = e.ts;
           }
-        } else if (k === "sms" && !out.sms) out.sms = e.data;
-        else if (k === "discord" && !out.discord) out.discord = e.data;
-        else if (k === "call" && !out.call) out.call = e.data;
+        } else {
+          if (k === "sms" && !out.sms) out.sms = e.data;
+          else if (k === "discord" && !out.discord) out.discord = e.data;
+          else if (k === "call" && !out.call) out.call = e.data;
+          if (!out.alertAt && ["sent", "dry_run"].includes(e.data.status)) out.alertAt = e.ts;
+        }
       }
       if (e.kind === "workflow.end" && e.data.workflow === "emergency") out.finished = true;
       if ((e.kind === "error" || e.kind === "status") && e.data.warning) out.warning = e.data.message;
@@ -359,6 +270,12 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
       await refresh();
       setTimeout(() => composer.current?.focus(), 50);
     });
+
+  const chooseLang = (l: Lang) => {
+    setLang(l);
+    api(`/api/sessions/${sessionId}/settings`, { method: "PUT", body: { locale: l } }).catch(() => {});
+    setTimeout(() => composer.current?.focus(), 0);
+  };
 
   const sendMessage = (text: string) => {
     const t = text.trim();
@@ -412,12 +329,24 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
     return null;
   }, [events]);
 
+  // What the privacy layer actually did, shown on the review screen.
+  const privacy: PrivacyEvidence = useMemo(() => {
+    const out: PrivacyEvidence = { identifiers: null, reviewed: null, scans: 0 };
+    for (const e of events) {
+      if (e.kind !== "tool.end") continue;
+      if (e.data.tool === "extract_identifiers" && e.data.result) out.identifiers = e.data.result.count ?? null;
+      if (e.data.tool === "review_public_text" && e.data.result) out.reviewed = !!e.data.result.clean;
+      if (e.data.tool === "pii_scan") out.scans += 1;
+    }
+    return out;
+  }, [events]);
+
   const draftingSteps = useMemo(() => {
     const tools = new Set(events.filter((e) => e.node === "drafting_agent" && e.kind === "tool.start").map((e) => e.data.tool));
     return [
-      { label: "Listing details that could identify anyone", done: tools.has("extract_identifiers") },
-      { label: "Writing the police complaint and the public summary", done: tools.has("save_drafts") || tools.has("pii_scan") },
-      { label: "Checking the public summary for personal information", done: tools.has("review_public_text") },
+      { label: "Finding anything that could identify you or others", done: tools.has("extract_identifiers") || tools.has("pii_scan") },
+      { label: "Writing the police complaint and the public summary", done: tools.has("save_drafts") },
+      { label: "Checking the public summary for personal details", done: tools.has("review_public_text") },
     ];
   }, [events]);
 
@@ -433,559 +362,289 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
       if (receipt) await api(`/api/demo/fast-forward/${receipt.public_ref}`, { body: {} });
     });
 
-  const copyRef = async () => {
-    if (!receipt) return;
-    try {
-      await navigator.clipboard.writeText(receipt.public_ref);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {}
+  const tc = session?.trusted_contact ?? null;
+  const contactName = tc && !tc.is_default && tc.name ? tc.name : tc ? "your trusted contact" : null;
+  const inEmergency = phase === "emergency" || phase === "safe" || em.started;
+  const help: HelpProps = {
+    contactName,
+    onOpenSetup,
+    armed,
+    onSendNow: () => setArmed(0),
+    onCancelArmed: () => setArmed(null),
+    noContact,
+    onCloseNoContact: () => setNoContact(false),
+    locating,
+    locDenied,
+    locText,
+    setLocText,
+    onSendWithoutLocation: () => setLocDenied((l) => (l ? { ...l, seconds: 0 } : l)),
   };
+  const showHelpShortcut = ["ask_report", "intake", "drafting", "review"].includes(phase) && !helpActive(help);
+  const step = STEP[phase];
+  const langDef = LANGS.find((l) => l.id === lang) ?? LANGS[0];
+  const urduInput = lang === "ur" || hasUrdu(input);
 
-  const inEmergency = phase === "emergency" || phase === "safe" || emergency.started;
-  const reportFlow = ["ask_report", "closed", "intake", "drafting", "review", "sending", "sent"].includes(phase);
-  const showHelpButton = !inEmergency && phase !== "loading" && phase !== "gate";
-
-  const locRow: { state: RowState; detail: string } = !emergency.location
-    ? { state: "pending", detail: "Finding your position…" }
-    : emergency.location.location_available
-      ? { state: "done", detail: emergency.location.address || `${emergency.location.lat?.toFixed(5)}, ${emergency.location.lng?.toFixed(5)}` }
-      : { state: "failed", detail: "Unavailable: your contact was told" };
-  const contactPhone = session?.trusted_contact?.phone || null;
-  const contactName = session?.trusted_contact && !session.trusted_contact.is_default ? session.trusted_contact.name : "your contact";
-  const smsBody = emergency.location?.maps_link
-    ? `I need help. This is where I am: ${emergency.location.maps_link}`
-    : "I need help. Please call me now.";
-  const channel = (d: any, label: string) =>
-    !d && emergency.finished ? { state: "off" as RowState, detail: "Not set up" } : outboundDetail(d, label);
-
+  // ---------------- render ----------------
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="border-b border-line">
-        <div className="flex items-center gap-2 px-4 py-3">
-          <div className="min-w-0">
-            <h1 className="text-[15px] font-semibold">Private session</h1>
-            <p className="truncate text-xs text-muted">Anonymous. Nothing is shared without your say.</p>
-          </div>
-          <div className="ml-auto flex items-center gap-1.5">
-            {showHelpButton && (
-              <button className="btn btn-danger btn-sm" onClick={() => setArmed(3)} disabled={(busy && phase !== "intake") || armed !== null}>
-                <ShieldAlert size={15} aria-hidden />
-                Get help now
-              </button>
-            )}
-            <button className="btn btn-quiet btn-sm" onClick={onOpenSetup} title="Trusted contact, country, language" aria-label="Setup">
-              <Settings2 size={16} aria-hidden />
-              <span className="hidden sm:inline">Setup</span>
+      <div className="flex min-h-14 items-center gap-2 border-b border-line px-5 sm:px-8">
+        <p className="min-w-0 text-small leading-tight text-ink-2">
+          <span className="block font-semibold text-ink">Private session</span>
+          {step && !inEmergency && (
+            <span className="tabular block truncate text-caption">
+              Step {step[0]} of 4<span className="hidden sm:inline">: {step[1]}</span>
+            </span>
+          )}
+        </p>
+        <div className="ml-auto flex items-center gap-2">
+          {showHelpShortcut && (
+            <button className="btn btn-danger btn-compact !min-h-11 whitespace-nowrap" onClick={() => setArmed(3)} disabled={busy && phase !== "intake"}>
+              <ShieldAlert size={ICON.sm} strokeWidth={STROKE} aria-hidden />
+              Get help<span className="hidden sm:inline"> now</span>
             </button>
-          </div>
-        </div>
-        <Stepper phase={inEmergency ? (phase === "safe" ? "safe" : "emergency") : phase} />
-      </div>
-
-      <div ref={scroller} className="scroll-thin min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
-        <Bubble m={{ role: "assistant", text: "Are you in danger right now?" }} />
-
-        {phase === "gate" && !locating && !locDenied && armed === null && !noContact && (
-          <div className="rise grid grid-cols-2 gap-2.5">
-            <button className="btn btn-danger !min-h-14 text-base" disabled={busy} onClick={getHelp}>
-              Yes, I need help
-            </button>
-            <button className="btn btn-ghost !min-h-14 text-base" disabled={busy} onClick={answerNo}>
-              No
-            </button>
-            <dl className="col-span-2 mt-3 divide-y divide-line rounded-xl border border-line text-sm">
-              <div className="flex gap-3 px-4 py-3">
-                <ShieldAlert size={16} className="mt-0.5 shrink-0 text-danger" aria-hidden />
-                <div>
-                  <dt className="font-medium">If you say yes</dt>
-                  <dd className="text-ink-2">
-                    Your trusted contact gets your location right away, by text, call or Discord, with updates until you are safe.{" "}
-                    <button className="underline underline-offset-2" onClick={onOpenSetup}>
-                      Add a contact
-                    </button>{" "}
-                    before you need it.
-                  </dd>
-                </div>
-              </div>
-              <div className="flex gap-3 px-4 py-3">
-                <FileText size={16} className="mt-0.5 shrink-0 text-accent" aria-hidden />
-                <div>
-                  <dt className="font-medium">If you say no</dt>
-                  <dd className="text-ink-2">You can report what happened, in your own words. You see both drafts and decide before anything is sent.</dd>
-                </div>
-              </div>
-              <div className="flex gap-3 px-4 py-3">
-                <ShieldCheck size={16} className="mt-0.5 shrink-0 text-ink-2" aria-hidden />
-                <div>
-                  <dt className="font-medium">Your privacy</dt>
-                  <dd className="text-ink-2">No account required. Your details only ever go to the police, never to the public. Quick exit leaves instantly.</dd>
-                </div>
-              </div>
-            </dl>
-          </div>
-        )}
-
-        {armed !== null && (
-          <div className="rise card space-y-3 border-danger p-4" role="alert">
-            <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-danger text-xl font-semibold text-danger-ink">{armed}</span>
-              <div>
-                <p className="font-medium">Alerting your trusted contact</p>
-                <p className="text-sm text-ink-2">Your location will be sent in {armed} second{armed === 1 ? "" : "s"}.</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button className="btn btn-danger" onClick={() => setArmed(0)}>
-                Send now
-              </button>
-              <button className="btn btn-ghost" onClick={() => setArmed(null)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {noContact && (
-          <div className="rise card space-y-3 border-danger p-4" role="alert">
-            <div className="flex items-start gap-2">
-              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-danger" />
-              <div>
-                <p className="font-medium">No trusted contact is set up, so no one can be alerted automatically.</p>
-                <p className="text-sm text-ink-2">Call for help directly from your phone:</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <a className="btn btn-danger !min-h-12" href="tel:15">
-                <Phone size={16} aria-hidden /> Police 15
-              </a>
-              <a className="btn btn-danger !min-h-12" href="tel:1122">
-                <Phone size={16} aria-hidden /> Rescue 1122
-              </a>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button className="btn btn-ghost btn-sm" onClick={onOpenSetup}>
-                Add a trusted contact
-              </button>
-              <button className="btn btn-quiet btn-sm" onClick={() => setNoContact(false)}>
-                Back
-              </button>
-            </div>
-          </div>
-        )}
-
-        {locating && (
-          <div className="rise card flex items-center gap-3 p-3 text-sm">
-            <Loader2 size={16} className="animate-spin text-run" /> Getting your location…
-          </div>
-        )}
-
-        {locDenied && (
-          <div className="rise card space-y-3 border-warn p-4">
-            <div className="flex items-start gap-2">
-              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-warn" />
-              <div>
-                <p className="font-medium">We couldn&apos;t get your location</p>
-                <p className="text-sm text-ink-2">{locDenied.reason}</p>
-              </div>
-            </div>
-            <input className="field" dir="auto" placeholder="Where are you? e.g. near Liberty Market, Gulberg" value={locText} onChange={(e) => setLocText(e.target.value)} />
-            <button className="btn btn-danger w-full" onClick={() => setLocDenied((l) => (l ? { ...l, seconds: 0 } : l))}>
-              Send alert now
-            </button>
-            <p className="text-center text-xs text-muted">Sending automatically in {locDenied.seconds}s</p>
-          </div>
-        )}
-
-        {/* ---------- emergency ---------- */}
-        {inEmergency && (
-          <div className="rise space-y-3">
-            <Bubble m={{ role: "user", text: "Yes, I need help" }} />
-            <div className="card overflow-hidden">
-              <div className={`flex items-center gap-2 px-4 py-3 text-sm font-medium ${phase === "safe" ? "bg-ok-soft text-ok" : "bg-danger-soft text-danger"}`}>
-                {phase === "safe" ? <ShieldCheck size={16} /> : <ShieldAlert size={16} />}
-                {phase === "safe" ? "You marked yourself safe. Tracking has stopped." : emergency.finished ? "Your contact has been alerted" : "Alerting your trusted contact"}
-              </div>
-              <ul className="divide-y divide-line px-4">
-                <StatusRow icon={MapPin} label="Your location" {...locRow} />
-                <StatusRow icon={MessageSquare} label="Text message" {...channel(emergency.sms, "Delivered to your contact")} />
-                <StatusRow icon={Phone} label="Phone call" {...channel(emergency.call, "Calling your contact")} />
-                <StatusRow icon={Globe2} label="Discord" {...channel(emergency.discord, "Posted to your contact's channel")} />
-              </ul>
-              {phase === "emergency" && contactPhone && (
-                <div className="border-t border-line px-4 py-3">
-                  <p className="mb-2 text-xs text-muted">Reach {contactName} yourself, from your own phone:</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <a className="btn btn-danger" href={`tel:${contactPhone}`}>
-                      <Phone size={16} aria-hidden /> Call now
-                    </a>
-                    <a className="btn btn-ghost" href={`sms:${contactPhone}?body=${encodeURIComponent(smsBody)}`}>
-                      <MessageSquare size={16} aria-hidden /> Text location
-                    </a>
-                  </div>
-                </div>
-              )}
-              {emergency.location?.location_available && (
-                <div className="border-t border-line">
-                  <iframe
-                    title="Your location"
-                    className="h-52 w-full"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    src={
-                      process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-                        ? `https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${emergency.location.lat},${emergency.location.lng}&zoom=16`
-                        : `https://maps.google.com/maps?q=${emergency.location.lat},${emergency.location.lng}&z=16&output=embed`
-                    }
-                  />
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs text-muted">
-                    <a className="text-run underline underline-offset-2" href={emergency.location.maps_link} target="_blank" rel="noreferrer">
-                      Open in Google Maps
-                    </a>
-                    <span>
-                      {emergency.updates > 0 && `${emergency.updates} location update${emergency.updates > 1 ? "s" : ""} sent · `}
-                      {emergency.location.address_source === "openstreetmap" && "Address © OpenStreetMap contributors"}
-                    </span>
-                  </div>
-                </div>
-              )}
-              {emergency.warning && (
-                <div className="flex items-start gap-2 border-t border-line bg-warn-soft px-4 py-2.5 text-xs text-warn">
-                  <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-                  <span>
-                    {emergency.warning}{" "}
-                    <button className="underline underline-offset-2" onClick={onOpenSetup}>
-                      Open setup
-                    </button>
-                  </span>
-                </div>
-              )}
-              <div className="border-t border-line p-4">
-                {phase === "safe" ? (
-                  <button className="btn btn-ghost w-full" onClick={onNewSession}>
-                    <RotateCcw size={15} /> Start a new session
-                  </button>
-                ) : (
-                  <button className="btn btn-primary w-full !min-h-12 text-base" disabled={busy} onClick={onSafe}>
-                    <ShieldCheck size={18} /> I&apos;m safe now
-                  </button>
-                )}
-              </div>
-            </div>
-            <p className="text-center text-xs text-muted">If you can, also call 15 (Police) or 1122 (Rescue).</p>
-          </div>
-        )}
-
-        {/* ---------- report ---------- */}
-        {reportFlow && !inEmergency && (
-          <>
-            <Bubble m={{ role: "user", text: "No" }} />
-            <Bubble m={{ role: "assistant", text: "Would you like to report what happened? You can stop at any point, and nothing is sent until you approve it." }} />
-          </>
-        )}
-        {phase === "ask_report" && (
-          <div className="rise grid grid-cols-2 gap-2.5">
-            <button className="btn btn-primary !min-h-12" disabled={busy} onClick={() => startReport(true)}>
-              Yes, report it
-            </button>
-            <button className="btn btn-ghost !min-h-12" disabled={busy} onClick={() => startReport(false)}>
-              Not now
-            </button>
-          </div>
-        )}
-        {phase === "closed" && (
-          <>
-            <Bubble m={{ role: "user", text: "Not now" }} />
-            <div className="rise card space-y-3 p-4 text-sm">
-              <p>You are not alone, and you can come back at any time.</p>
-              <ul className="space-y-1 text-ink-2">
-                <li>Police emergency: <strong>15</strong></li>
-                <li>Rescue: <strong>1122</strong></li>
-                <li>Human Rights helpline: <strong>1099</strong></li>
-                <li>Madadgaar (women and children): <strong>1098</strong></li>
-              </ul>
-              <button className="btn btn-ghost w-full" onClick={onNewSession}>
-                <RotateCcw size={15} /> Start over
-              </button>
-            </div>
-          </>
-        )}
-
-        {["intake", "drafting", "review", "sending", "sent"].includes(phase) && (
-          <>
-            <Bubble m={{ role: "user", text: "Yes, report it" }} />
-            {transcript.map((m, i) => (
-              <Bubble key={i} m={m} />
-            ))}
-            {session?.transcript.length === 0 && phase !== "intake" && (
-              <p className="text-center text-xs text-muted">The conversation was deleted from this session after sending, for your privacy.</p>
-            )}
-          </>
-        )}
-
-        {busy && phase === "intake" && (
-          <div className="typing flex gap-1 px-1 py-2" aria-label="Awaaz is typing">
-            <span />
-            <span />
-            <span />
-          </div>
-        )}
-
-        {dangerPrompt && phase === "intake" && (
-          <div className="rise card space-y-3 border-danger p-4">
-            <p className="text-sm">It sounds like you might not be safe right now. Do you want to alert your trusted contact with your location?</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button className="btn btn-danger" onClick={getHelp}>
-                Alert my contact
-              </button>
-              <button className="btn btn-ghost" onClick={() => setDangerPrompt(false)}>
-                Continue the report
-              </button>
-            </div>
-          </div>
-        )}
-
-        {phase === "drafting" && (
-          <div className="rise card space-y-2 p-4">
-            <p className="text-sm font-medium">Preparing your two drafts</p>
-            <ul className="space-y-1.5 text-sm">
-              {draftingSteps.map((s, i) => {
-                const active = !s.done && (i === 0 || draftingSteps[i - 1].done);
-                return (
-                  <li key={s.label} className={`flex items-center gap-2 ${s.done ? "text-ink-2" : active ? "text-ink" : "text-muted"}`}>
-                    {s.done ? (
-                      <Check size={14} className="text-ok" />
-                    ) : active ? (
-                      <Loader2 size={14} className="animate-spin text-run" />
-                    ) : (
-                      <span className="h-3.5 w-3.5 rounded-full border border-line-strong" />
-                    )}
-                    {s.label}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-
-        {phase === "review" && session?.drafts && (
-          <div className="rise space-y-3">
-            <p className="text-sm text-ink-2">Please read both versions. Nothing is sent until you press Send.</p>
-            <section className="card overflow-hidden">
-              <header className="flex items-start gap-3 border-b border-line px-4 py-3">
-                <FileText size={18} className="mt-0.5 shrink-0 text-ink-2" />
-                <div>
-                  <h3 className="text-sm font-semibold">Police complaint</h3>
-                  <p className="text-xs text-muted">Full details, including your name and contact. Only the police dashboard sees this. You can edit it.</p>
-                </div>
-              </header>
-              <textarea
-                className="block min-h-56 w-full resize-y bg-surface px-4 py-3 text-sm leading-relaxed outline-none"
-                dir="auto"
-                value={policeText}
-                onChange={(e) => setPoliceText(e.target.value)}
-                aria-label="Police complaint text"
-              />
-              <footer className="border-t border-line px-4 py-2">
-                <button className="btn btn-quiet btn-sm" onClick={() => setRevise({ target: "police", text: "" })}>
-                  Ask Awaaz to revise
-                </button>
-              </footer>
-            </section>
-
-            <section className="card overflow-hidden">
-              <header className="flex items-start gap-3 border-b border-line px-4 py-3">
-                <Globe2 size={18} className="mt-0.5 shrink-0 text-ink-2" />
-                <div>
-                  <h3 className="text-sm font-semibold">Public summary</h3>
-                  <p className="text-xs text-muted">
-                    Shared with matched activist groups, and with news outlets if the police take no action within 24 hours. Contains no personal details.
-                  </p>
-                </div>
-              </header>
-              {session.drafts.public_clean ? (
-                <p className="whitespace-pre-wrap px-4 py-3 text-sm leading-relaxed">{session.drafts.public_text}</p>
-              ) : (
-                <div className="m-4 flex items-start gap-2 rounded-lg bg-warn-soft p-3 text-sm text-warn">
-                  <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-                  <span>
-                    <strong>On hold.</strong> The privacy check could not confirm this summary is free of personal information, so it will not be
-                    shared. Your police complaint can still be sent. You can ask for changes and try again.
-                  </span>
-                </div>
-              )}
-              <footer className="border-t border-line px-4 py-2">
-                <button className="btn btn-quiet btn-sm" onClick={() => setRevise({ target: "public", text: "" })}>
-                  Request changes
-                </button>
-              </footer>
-            </section>
-
-            {revise && (
-              <div className="card space-y-2 p-4">
-                <label className="text-sm font-medium" htmlFor="revise">
-                  What should change in the {revise.target === "police" ? "police complaint" : "public summary"}?
-                </label>
-                <textarea id="revise" className="field text-sm" dir="auto" rows={3} value={revise.text} onChange={(e) => setRevise({ ...revise, text: e.target.value })} />
-                <div className="flex gap-2">
-                  <button className="btn btn-primary flex-1" disabled={busy || !revise.text.trim()} onClick={onRevise}>
-                    Revise
-                  </button>
-                  <button className="btn btn-ghost" onClick={() => setRevise(null)}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {(phase === "sending" || phase === "sent") && (
-          <div className="rise card overflow-hidden">
-            <div className="flex items-center gap-2 border-b border-line bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
-              {receipt ? <ShieldCheck size={16} /> : <Loader2 size={16} className="animate-spin" />}
-              {receipt ? "Your report was sent" : "Sending your report…"}
-            </div>
-            {receipt && (
-              <div className="divide-y divide-line">
-                <div className="flex items-center justify-between gap-2 px-4 py-3">
-                  <div>
-                    <div className="label">Reference</div>
-                    <div className="font-mono text-sm font-medium">{receipt.public_ref}</div>
-                  </div>
-                  <button className="btn btn-quiet btn-sm" onClick={copyRef}>
-                    {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? "Copied" : "Copy"}
-                  </button>
-                </div>
-                <div className="px-4 py-3 text-sm">
-                  <div className="label mb-1">Police</div>
-                  {receipt.police_submitted ? "Your complaint is on the police dashboard." : "Submission pending."}
-                </div>
-                <div className="px-4 py-3 text-sm">
-                  <div className="label mb-1">Activist groups</div>
-                  {receipt.public_on_hold && <p className="text-warn">The public summary was held back by the privacy check. Nothing was shared publicly.</p>}
-                  {receipt.no_match && <p className="text-muted">No group matched this case closely enough, so none were emailed.</p>}
-                  {receipt.communities && receipt.communities.length > 0 && (
-                    <ul className="space-y-2">
-                      {receipt.communities.map((c) => (
-                        <li key={c.name}>
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="font-medium">{c.name}</span>
-                            <span className="font-mono text-xs text-muted">match {c.score.toFixed(2)}</span>
-                          </div>
-                          <p className="text-xs text-muted">{c.reason}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                {receipt.authority && (
-                  <div className="px-4 py-3 text-sm">
-                    <div className="label mb-1">Authority</div>
-                    The social-media-post version was {receipt.authority.status === "sent" ? "emailed to" : receipt.authority.status === "dry_run" ? "prepared for (dry run)" : "queued for"} the relevant authority.
-                  </div>
-                )}
-                {(dueAt || escalationOutcome || cancelled) && (
-                  <div className="px-4 py-3 text-sm">
-                    <div className="label mb-1">News outlets</div>
-                    {escalationOutcome ? (
-                      <p>{escalationOutcome}</p>
-                    ) : cancelled ? (
-                      <p className="text-ink-2">News escalation cancelled.</p>
-                    ) : (
-                      <>
-                        <p className="text-ink-2">
-                          If the police record no action, the public summary goes to news outlets in{" "}
-                          <span className="font-mono font-medium text-ink">{fmtCountdown(dueAt, now).text}</span>.
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={onCancel}>
-                            Cancel news escalation
-                          </button>
-                          {health?.demo_routes && (
-                            <button className="btn btn-quiet btn-sm" disabled={busy} onClick={onFastForward}>
-                              Demo: skip to deadline
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-                <div className="p-4">
-                  <button className="btn btn-ghost w-full" onClick={onNewSession}>
-                    <RotateCcw size={15} /> Start a new session
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {error && (
-          <p className="flex items-start gap-2 rounded-lg bg-danger-soft p-3 text-sm text-danger" role="alert">
-            <AlertTriangle size={16} className="mt-0.5 shrink-0" /> {error}
-          </p>
-        )}
-      </div>
-
-      {phase === "intake" && (
-        <div className="border-t border-line bg-surface px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
-          <div className="mb-2 flex gap-1.5 overflow-x-auto">
-            {[
-              ["Skip this question", "skip"],
-              ["That's all I want to share", "That's all I want to share."],
-            ].map(([label, text]) => (
-              <button
-                key={label}
-                className="shrink-0 rounded-full border border-line-strong px-3 py-1 text-xs text-ink-2 hover:bg-surface-2 disabled:opacity-40"
-                disabled={busy}
-                onClick={() => sendMessage(text)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <form
-            className="flex items-end gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              sendMessage(input);
-            }}
-          >
-            <textarea
-              ref={composer}
-              dir="auto"
-              rows={1}
-              className={`field max-h-36 min-h-[44px] flex-1 resize-none ${hasUrdu(input) ? "urdu" : ""}`}
-              placeholder="Write in English, اردو or Roman Urdu"
-              value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-                e.target.style.height = "auto";
-                e.target.style.height = `${e.target.scrollHeight}px`;
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage(input);
-                }
-              }}
-              aria-label="Your message"
-            />
-            <button className="btn btn-primary !min-h-[44px] !w-11 !px-0" disabled={busy || !input.trim()} aria-label="Send">
-              <ArrowUp size={18} />
-            </button>
-          </form>
-        </div>
-      )}
-
-      {phase === "review" && session?.drafts && (
-        <div className="border-t border-line bg-surface px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-          <button className="btn btn-primary w-full !min-h-12 text-base" disabled={busy} onClick={onConfirm}>
-            <Send size={16} /> {session.drafts.public_clean ? "Send to police and activist groups" : "Send to police only"}
+          )}
+          <button className="btn btn-quiet btn-compact !min-h-11 !no-underline" onClick={onOpenSetup} aria-label="Setup: trusted contact, country, language">
+            <Settings2 size={ICON.md} strokeWidth={STROKE} aria-hidden />
+            <span className="hidden sm:inline">Setup</span>
           </button>
         </div>
+      </div>
+
+      {phase === "loading" ? (
+        <div className="flex flex-1 items-center justify-center" role="status">
+          <Loader2 size={ICON.lg} strokeWidth={STROKE} className="animate-spin text-muted" aria-hidden />
+          <span className="sr-only">Loading</span>
+        </div>
+      ) : inEmergency ? (
+        <Emergency
+          phase={phase}
+          em={em}
+          contactName={contactName ?? "your trusted contact"}
+          contactPhone={tc?.phone ?? null}
+          now={now}
+          busy={busy}
+          onSafe={onSafe}
+          onNewSession={onNewSession}
+          onOpenSetup={onOpenSetup}
+        />
+      ) : phase === "gate" ? (
+        <Gate {...help} busy={busy} onYes={getHelp} onNo={answerNo} />
+      ) : (
+        <>
+          <div ref={scroller} className="scroll-thin min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-8" tabIndex={0} aria-label="Conversation">
+            <div className="mx-auto max-w-2xl space-y-5">
+              {!["ask_report", "closed"].includes(phase) && <h1 className="sr-only">Your report</h1>}
+              {phase === "ask_report" && (
+                <div className="appear">
+                  <h1 className="text-display font-semibold">Do you want to report what happened?</h1>
+                  <p className="mt-3 text-lead text-ink-2">
+                    We will ask a few gentle questions, one at a time. You can skip any of them, stop at any point, and nothing is sent until you approve
+                    it.
+                  </p>
+                </div>
+              )}
+
+              {phase === "closed" && (
+                <div className="appear space-y-4">
+                  <h1 className="text-display font-semibold">You can come back at any time.</h1>
+                  <p className="text-lead text-ink-2">If you ever feel unsafe, open Awaaz and answer Yes to alert your trusted contact.</p>
+                  <EmergencyNumbers />
+                  <p className="text-small text-ink-2">
+                    Human Rights helpline <a className="font-semibold underline underline-offset-4" href="tel:1099">1099</a> · Madadgaar (women and children){" "}
+                    <a className="font-semibold underline underline-offset-4" href="tel:1098">1098</a>
+                  </p>
+                </div>
+              )}
+
+              {["intake", "drafting", "review", "sending", "sent"].includes(phase) && (
+                <>
+                  {transcript.length === 0 && phase !== "intake" ? (
+                    <p className="text-small text-muted">The conversation was deleted from this session after sending, for your privacy.</p>
+                  ) : (
+                    <ol className="space-y-5" aria-label="Messages">
+                      {transcript.map((m, i) => (
+                        <li key={i}>
+                          <Message m={m} />
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </>
+              )}
+
+              {busy && phase === "intake" && <Typing />}
+
+              {dangerPrompt && phase === "intake" && !helpActive(help) && (
+                <div className="appear border-l-4 border-danger pl-4" role="alert">
+                  <p className="text-body font-semibold">It sounds like you may not be safe right now.</p>
+                  <p className="text-body text-ink-2">Do you want to alert your trusted contact with your location?</p>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <button className="btn btn-danger" onClick={getHelp}>
+                      Alert them now
+                    </button>
+                    <button className="btn btn-secondary" onClick={() => setDangerPrompt(false)}>
+                      Keep reporting
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {phase === "drafting" && (
+                <section className="appear" aria-labelledby="drafting-title" aria-live="polite">
+                  <h2 id="drafting-title" className="text-lead font-semibold">
+                    Preparing your two versions
+                  </h2>
+                  <ul className="mt-3 space-y-2">
+                    {draftingSteps.map((s, i) => {
+                      const active = !s.done && (i === 0 || draftingSteps[i - 1].done);
+                      return (
+                        <li key={s.label} className={`flex items-center gap-3 text-body ${s.done || active ? "text-ink" : "text-muted"}`}>
+                          {s.done ? (
+                            <Check size={ICON.md} strokeWidth={2.25} className="text-safe-ink" aria-hidden />
+                          ) : active ? (
+                            <Loader2 size={ICON.md} strokeWidth={STROKE} className="animate-spin text-info" aria-hidden />
+                          ) : (
+                            <span className="h-5 w-5 rounded-full border border-line-strong" aria-hidden />
+                          )}
+                          {s.label}
+                          <span className="sr-only">{s.done ? ", done" : active ? ", in progress" : ", waiting"}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              )}
+
+              {phase === "review" && session?.drafts && (
+                <Review
+                  drafts={session.drafts}
+                  policeText={policeText}
+                  setPoliceText={setPoliceText}
+                  privacy={privacy}
+                  busy={busy}
+                  revise={revise}
+                  setRevise={setRevise}
+                  onRevise={onRevise}
+                  onConfirm={onConfirm}
+                />
+              )}
+
+              {(phase === "sending" || phase === "sent") && (
+                <ReceiptView
+                  receipt={receipt}
+                  dueAt={dueAt}
+                  outcome={escalationOutcome}
+                  cancelled={cancelled}
+                  now={now}
+                  busy={busy}
+                  health={health}
+                  onCancel={onCancel}
+                  onFastForward={onFastForward}
+                  onNewSession={onNewSession}
+                />
+              )}
+
+              {error && (
+                <p className="border-l-4 border-danger pl-4 text-body text-danger-ink" role="alert">
+                  {error}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {helpActive(help) && (
+            <div className="border-t border-line bg-surface px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-8">
+              <HelpStates {...help} />
+            </div>
+          )}
+
+          {phase === "ask_report" && !helpActive(help) && (
+            <div className="border-t border-line bg-surface px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-8">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button className="btn btn-primary !min-h-14" disabled={busy} onClick={() => startReport(true)}>
+                  Yes, I want to report it
+                </button>
+                <button className="btn btn-secondary !min-h-14" disabled={busy} onClick={() => startReport(false)}>
+                  Not now
+                </button>
+              </div>
+            </div>
+          )}
+
+          {phase === "closed" && (
+            <div className="border-t border-line bg-surface px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-8">
+              <button className="btn btn-secondary w-full" onClick={onNewSession}>
+                <RotateCcw size={ICON.md} strokeWidth={STROKE} aria-hidden /> Start over
+              </button>
+            </div>
+          )}
+
+          {phase === "intake" && !helpActive(help) && (
+            <div className="border-t border-line bg-surface px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-6">
+              <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <div role="radiogroup" aria-label="Language" className="flex rounded-md border border-line-strong p-0.5">
+                  {LANGS.map((l) => (
+                    <button
+                      key={l.id}
+                      role="radio"
+                      aria-checked={lang === l.id}
+                      onClick={() => chooseLang(l.id)}
+                      lang={l.id === "ur" ? "ur" : undefined}
+                      className={`min-h-9 rounded-sm px-2.5 text-caption font-semibold ${lang === l.id ? "bg-ink text-paper" : "text-ink-2 hover:text-ink"} ${
+                        l.id === "ur" ? "urdu !leading-none" : ""
+                      }`}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-4 text-small">
+                  <button className="btn-quiet min-h-9 disabled:opacity-40" disabled={busy} onClick={() => sendMessage("skip")}>
+                    Skip question
+                  </button>
+                  <button className="btn-quiet min-h-9 disabled:opacity-40" disabled={busy} onClick={() => sendMessage("That's all I want to share.")}>
+                    That&apos;s all
+                  </button>
+                </div>
+              </div>
+              <form
+                className="flex items-end gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  sendMessage(input);
+                }}
+              >
+                <label htmlFor="composer" className="sr-only">
+                  Your message
+                </label>
+                <textarea
+                  id="composer"
+                  ref={composer}
+                  dir={lang === "ur" ? "rtl" : "auto"}
+                  lang={urduInput ? "ur" : undefined}
+                  rows={1}
+                  className={`field max-h-40 min-h-12 flex-1 resize-none ${urduInput ? "urdu" : ""}`}
+                  placeholder={langDef.placeholder}
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = `${e.target.scrollHeight}px`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                      e.preventDefault();
+                      sendMessage(input);
+                    }
+                  }}
+                />
+                <button className="btn btn-primary !min-h-12 !w-12 shrink-0 !px-0" disabled={busy || !input.trim()} aria-label="Send message">
+                  <ArrowUp size={ICON.md} strokeWidth={2} aria-hidden />
+                </button>
+              </form>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

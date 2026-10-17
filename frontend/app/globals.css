@@ -1,108 +1,220 @@
 @import "tailwindcss";
 
+/*
+ * Awaaz design tokens. See docs/DESIGN.md.
+ * Components use only these tokens: Tailwind's default colours, radii and shadows are removed below.
+ */
+
 :root {
-  --bg: #f4f2ed;
-  --surface: #ffffff;
-  --surface-2: #f1eee8;
-  --surface-3: #e9e5dd;
-  --ink: #15171a;
-  --ink-2: #3d4248;
-  --muted: #6b7078;
-  --line: #e0dbd2;
-  --line-strong: #cbc5ba;
-  --accent: #1d5a52;
-  --accent-ink: #ffffff;
-  --accent-soft: #e3eeeb;
-  --danger: #b42318;
-  --danger-ink: #ffffff;
-  --danger-soft: #fbeae8;
-  --warn: #8f5200;
-  --warn-soft: #fbf0dc;
-  --ok: #24704a;
-  --ok-soft: #e4f2ea;
-  --run: #2754b8;
-  --run-soft: #e6ecfa;
-  --shadow: 0 1px 2px rgb(20 20 20 / 0.04), 0 2px 8px rgb(20 20 20 / 0.04);
+  --paper: #f6f3ec;
+  --surface: #fffdf9;
+  --sunken: #eeeae1;
+  --ink: #1f1b16;
+  --ink-2: #474037;
+  --muted: #655d52;
+  --line: #ded7ca;
+  --line-strong: #8f8576;
+  --on-fill: #ffffff;
+
+  --danger: #a3231a;
+  --danger-ink: #8c1d14;
+  --danger-soft: #f8e6e2;
+  --safe: #25593f;
+  --safe-ink: #255a40;
+  --safe-soft: #e3eee7;
+  --hold: #7f4e00;
+  --hold-soft: #f6ead3;
+  --info: #2c5682;
+  --info-soft: #e4ecf5;
+
+  --scrim: rgb(20 17 14 / 0.55);
+  --shadow-overlay-value: 0 1px 2px rgb(20 17 14 / 0.08), 0 12px 32px rgb(20 17 14 / 0.16);
+
+  --header-h: 3.5rem;
+  --z-sticky: 10;
+  --z-header: 20;
+  --z-overlay: 40;
+  --z-toast: 50;
+  --dur-fast: 150ms;
+  --dur: 200ms;
+  --dur-slow: 250ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0e1012;
-    --surface: #15181b;
-    --surface-2: #1b1f23;
-    --surface-3: #23282d;
-    --ink: #eceef0;
-    --ink-2: #c4c8cd;
-    --muted: #8d939a;
-    --line: #262b30;
-    --line-strong: #353b42;
-    --accent: #6cbcad;
-    --accent-ink: #0b1a17;
-    --accent-soft: #15302b;
-    --danger: #f0705f;
-    --danger-ink: #1c0805;
-    --danger-soft: #34170f;
-    --warn: #e7b65c;
-    --warn-soft: #2e2412;
-    --ok: #74c999;
-    --ok-soft: #142a1d;
-    --run: #8fb0f5;
-    --run-soft: #17223a;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    --paper: #131110;
+    --surface: #1b1916;
+    --sunken: #24211d;
+    --ink: #efeae2;
+    --ink-2: #d2cabd;
+    --muted: #a59d90;
+    --line: #302c27;
+    --line-strong: #776f63;
+    --danger-ink: #ffa195;
+    --danger-soft: #3a1a16;
+    --safe-ink: #8fd2ac;
+    --safe-soft: #16291f;
+    --hold: #e9b65e;
+    --hold-soft: #30250f;
+    --info: #8db4e8;
+    --info-soft: #18233a;
+    --scrim: rgb(0 0 0 / 0.65);
+    --shadow-overlay-value: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.5);
+    color-scheme: dark;
+  }
+}
+
+@media (min-width: 640px) {
+  :root {
+    --header-h: 4rem;
   }
 }
 
 @theme inline {
-  --color-bg: var(--bg);
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-paper: var(--paper);
   --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-surface-3: var(--surface-3);
+  --color-sunken: var(--sunken);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
-  --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
-  --color-accent-soft: var(--accent-soft);
+  --color-on-fill: var(--on-fill);
   --color-danger: var(--danger);
   --color-danger-ink: var(--danger-ink);
   --color-danger-soft: var(--danger-soft);
-  --color-warn: var(--warn);
-  --color-warn-soft: var(--warn-soft);
-  --color-ok: var(--ok);
-  --color-ok-soft: var(--ok-soft);
-  --color-run: var(--run);
-  --color-run-soft: var(--run-soft);
-  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --color-safe: var(--safe);
+  --color-safe-ink: var(--safe-ink);
+  --color-safe-soft: var(--safe-soft);
+  --color-hold: var(--hold);
+  --color-hold-soft: var(--hold-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-scrim: var(--scrim);
+
+  --font-sans: var(--font-atkinson), system-ui, sans-serif;
+  --font-heading: var(--font-newsreader), Georgia, serif;
+  --font-mono: var(--font-atkinson-mono), ui-monospace, monospace;
+  --font-urdu: var(--font-nastaliq), var(--font-atkinson), serif;
+
+  --text-*: initial;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.45;
+  --text-small: 0.9375rem;
+  --text-small--line-height: 1.5;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.55;
+  --text-lead: 1.25rem;
+  --text-lead--line-height: 1.45;
+  --text-title: 1.5rem;
+  --text-title--line-height: 1.25;
+  --text-display: 2rem;
+  --text-display--line-height: 1.15;
+  --text-hero: 2.5rem;
+  --text-hero--line-height: 1.1;
+
+  --radius-*: initial;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --shadow-*: initial;
+  --shadow-overlay: var(--shadow-overlay-value);
+
+  --ease-out: var(--ease);
 }
 
-html,
-body {
-  background: var(--bg);
-  color: var(--ink);
+/* ---------------- base (layered, so utilities can override) ---------------- */
+
+@layer base {
+  html,
+  body {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: var(--font-atkinson), system-ui, sans-serif;
+    font-size: var(--text-body);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-newsreader), Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--info);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--info-soft);
+    color: var(--ink);
+  }
+
+  button,
+  a,
+  summary,
+  [role="button"] {
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: 0.75rem;
+    top: -4rem;
+    z-index: calc(var(--z-toast) + 10);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 600;
+  }
+  .skip-link:focus {
+    top: 0.75rem;
+  }
 }
 
-body {
-  font-family: var(--font-plex-sans), system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+/* Urdu: Nastaliq stacks diagonally and needs generous leading. Unlayered on purpose: it must win over utilities. */
+.urdu,
+:lang(ur) {
+  font-family: var(--font-nastaliq), var(--font-atkinson), serif;
+  line-height: 2.1;
 }
 
-.urdu {
-  font-family: var(--font-urdu), var(--font-plex-sans), serif;
-  line-height: 2;
-}
-
-:focus-visible {
-  outline: 2px solid var(--run);
-  outline-offset: 2px;
-}
-
-::selection {
-  background: var(--accent-soft);
-}
+/* ---------------- components ---------------- */
 
 @layer components {
   .btn {
@@ -110,81 +222,109 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 0.6rem;
-    padding: 0.6rem 1rem;
-    font-weight: 500;
-    font-size: 0.925rem;
-    min-height: 42px;
+    min-height: 3rem;
+    padding: 0.75rem 1.125rem;
+    border-radius: var(--radius-md);
     border: 1px solid transparent;
-    transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
-    white-space: nowrap;
+    font-weight: 600;
+    font-size: var(--text-body);
+    line-height: 1.2;
+    text-align: center;
+    transition:
+      background-color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
   }
-  .btn:disabled {
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
     opacity: 0.45;
     cursor: not-allowed;
   }
+  /* Ordinary primary action: ink, never colour. */
   .btn-primary {
-    background: var(--accent);
-    color: var(--accent-ink);
+    background: var(--ink);
+    color: var(--paper);
   }
   .btn-primary:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--accent) 88%, var(--ink));
+    background: color-mix(in srgb, var(--ink) 86%, var(--paper));
   }
+  /* Reserved for emergency actions. */
   .btn-danger {
     background: var(--danger);
-    color: var(--danger-ink);
+    color: var(--on-fill);
   }
   .btn-danger:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--danger) 88%, var(--ink));
+    background: color-mix(in srgb, var(--danger) 88%, black);
   }
-  .btn-ghost {
+  .btn-safe {
+    background: var(--safe);
+    color: var(--on-fill);
+  }
+  .btn-safe:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--safe) 88%, black);
+  }
+  .btn-secondary {
     background: var(--surface);
     color: var(--ink);
     border-color: var(--line-strong);
   }
-  .btn-ghost:hover:not(:disabled) {
-    background: var(--surface-2);
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--sunken);
   }
   .btn-quiet {
     background: transparent;
-    color: var(--ink-2);
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-underline-offset: 0.2em;
   }
   .btn-quiet:hover:not(:disabled) {
-    background: var(--surface-2);
+    text-decoration-color: var(--ink);
   }
-  .btn-sm {
-    min-height: 34px;
-    padding: 0.35rem 0.7rem;
-    font-size: 0.85rem;
-  }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 0.9rem;
+  /* Pointer-first screens (police, instrumentation): 40 px. */
+  .btn-compact {
+    min-height: 2.5rem;
+    padding: 0.5rem 0.875rem;
+    font-size: var(--text-small);
   }
 
   .field {
     width: 100%;
+    min-height: 3rem;
+    padding: 0.625rem 0.875rem;
     background: var(--surface);
     border: 1px solid var(--line-strong);
-    border-radius: 0.6rem;
-    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius-md);
     color: var(--ink);
-    font-size: 0.95rem;
+    font-size: var(--text-body);
+  }
+  .field::placeholder {
+    color: var(--muted);
   }
   .field:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
+    outline: 2px solid var(--info);
+    outline-offset: 0;
+    border-color: var(--info);
   }
 
   .label {
-    font-size: 0.72rem;
+    font-family: var(--font-atkinson), system-ui, sans-serif;
+    font-size: var(--text-caption);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--muted);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-full);
+    font-size: var(--text-caption);
+    font-weight: 600;
+    white-space: nowrap;
   }
 
   .scroll-thin {
@@ -193,54 +333,84 @@ body {
   }
 }
 
-@keyframes ring {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--run) 40%, transparent); }
-  70% { box-shadow: 0 0 0 8px transparent; }
-  100% { box-shadow: 0 0 0 0 transparent; }
+/* ---------------- motion: state changes only ---------------- */
+
+@keyframes ping-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
 }
-.pulse {
-  animation: ring 1.6s infinite;
+.ping {
+  animation: ping-ring 1.6s var(--ease) infinite;
 }
 
-@keyframes blink {
-  0%, 20% { opacity: 0.25; }
-  50% { opacity: 1; }
-  100% { opacity: 0.25; }
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.appear {
+  animation: appear var(--dur) var(--ease);
+}
+
+@keyframes dots {
+  0%,
+  20% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.25;
+  }
 }
 .typing span {
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 999px;
   background: var(--muted);
-  animation: blink 1.2s infinite;
+  animation: dots 1.2s infinite;
 }
-.typing span:nth-child(2) { animation-delay: 0.2s; }
-.typing span:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes rise {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
+.typing span:nth-child(2) {
+  animation-delay: 0.2s;
 }
-.rise {
-  animation: rise 0.18s ease-out;
+.typing span:nth-child(3) {
+  animation-delay: 0.4s;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* React Flow chrome follows the tokens. */
 .react-flow__attribution {
   display: none;
 }
 .react-flow__controls {
   box-shadow: none !important;
   border: 1px solid var(--line);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .react-flow__controls-button {
   background: var(--surface) !important;
   border-bottom: 1px solid var(--line) !important;
   fill: var(--ink-2) !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pulse, .typing span, .rise { animation: none; }
+  width: 2rem !important;
+  height: 2rem !important;
 }
