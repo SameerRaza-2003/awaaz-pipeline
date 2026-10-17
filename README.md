@@ -46,14 +46,15 @@ Requirements: Python 3.12 with [uv](https://docs.astral.sh/uv/), Node 20+.
 ```bash
 cp .env.example .env          # fill in what you have; everything defaults to safe dry-run mode
 make install
-make dev                      # backend on :8000, frontend on :3000
+make dev                      # backend on :8000, frontend on https://localhost:3000 (and your LAN IP)
 ```
 
-Open http://localhost:3000.
+Open https://localhost:3000 and accept the self-signed certificate warning once.
 
-**On your phone** (same Wi-Fi): run `make dev-phone` instead, open `https://<your computer's IP>:3000` (e.g. `https://192.168.18.120:3000`)
-and accept the certificate warning once. HTTPS is needed because phones only share GPS location with secure pages; plain
-`make dev` also works from a phone at `http://<IP>:3000`, but the danger button then falls back to typed location.
+**On your phone** (same Wi-Fi): open `https://<your computer's IP>:3000` (e.g. `https://192.168.18.120:3000`) and accept the
+certificate warning once. HTTPS is needed because phones only share GPS location with secure pages (`make dev-http` serves
+plain http if you need it, but then the danger button falls back to typed location).
+Channels that are not configured (for example SMS without a provider) show "Not set up" instead of failing.
 The frontend forwards `/api` to the backend, so the backend stays on localhost and only port 3000 needs to be reachable. The police dashboard is at `/police` (demo login from `POLICE_DEMO_USER` / `POLICE_DEMO_PASSWORD`, default `officer` / `awaaz-demo`).
 
 Without an `OPENROUTER_API_KEY` the app still works end to end on its deterministic fallbacks: the alert and call go out from a fixed template, the interview uses fixed questions, the police complaint is built from the answers, and the public report is held back because no clean public draft can be confirmed.
@@ -92,10 +93,17 @@ Two options, and they work together:
 - **One tap from her own phone.** After an alert, the emergency screen shows **Call now** and **Text location** buttons for the
   trusted contact (her saved contact, or `DEFAULT_TRUSTED_CONTACT`). They use her own SIM, so they cost nothing.
 - **Automatic call from a spare Android phone.** Install **MacroDroid** on an Android phone with a SIM and create a macro:
-  trigger **Webhook (URL)** (copy the URL it shows), action **Make call** to the trusted contact's number. Then set
-  `CALL_PROVIDER=macrodroid` and `MACRODROID_CALL_URL=<that URL>`. Awaaz calls the URL (with `to` and `text` parameters, for
+  trigger **Webhook (URL)** with identifier `awaaz_call`, action **Make call** to the trusted contact (save them as a contact on
+  that phone first if MacroDroid only offers a contact picker). Then set `CALL_PROVIDER=macrodroid`,
+  `MACRODROID_URL=https://trigger.macrodroid.com/<device-id>/` and `MACRODROID_CALL_ID=awaaz_call`. Awaaz calls the URL (with `to` and `text` parameters, for
   macros that want them) and the phone rings the contact. There is no spoken message; the location goes by Discord or SMS.
   In sandbox mode the contact's number must be in `OUTBOUND_ALLOWLIST`.
+
+### SMS without Twilio (free)
+
+On the same spare phone, add a second MacroDroid macro: trigger **Webhook (URL)** with identifier `awaaz sms`, local string
+variables `to` and `text`, action **Send SMS** to `[lv=to]` with message `[lv=text]`. Then set `SMS_PROVIDER=macrodroid` and
+`MACRODROID_SMS_ID="awaaz sms"`. The alert, every location update and the "safe" message then go out as real SMS from that SIM.
 
 ### Discord (free alerts)
 

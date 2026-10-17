@@ -37,7 +37,27 @@ class Settings(BaseSettings):
     privacy_llm_review: bool = True  # LLM identifier extraction + second-read review on top of the scanner
 
     call_provider: Literal["twilio", "macrodroid"] = "twilio"
-    macrodroid_call_url: str = ""  # MacroDroid "Webhook (URL)" trigger on a spare Android phone that places the call
+    sms_provider: Literal["twilio", "macrodroid"] = "twilio"
+    # MacroDroid on a spare Android phone places the call. Either the device link + trigger identifier,
+    # or the full trigger URL in macrodroid_call_url.
+    macrodroid_url: str = ""  # https://trigger.macrodroid.com/<device-id>/
+    macrodroid_call_id: str = "awaaz_call"
+    macrodroid_call_url: str = ""
+    macrodroid_sms_id: str = "awaaz_sms"
+
+    @property
+    def macrodroid_sms_endpoint(self) -> str:
+        if self.macrodroid_url.strip() and self.macrodroid_sms_id.strip():
+            return self.macrodroid_url.strip().rstrip("/") + "/" + self.macrodroid_sms_id.strip().strip("/")
+        return ""
+
+    @property
+    def macrodroid_call_endpoint(self) -> str:
+        if self.macrodroid_call_url.strip():
+            return self.macrodroid_call_url.strip()
+        if self.macrodroid_url.strip() and self.macrodroid_call_id.strip():
+            return self.macrodroid_url.strip().rstrip("/") + "/" + self.macrodroid_call_id.strip().strip("/")
+        return ""
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_from_number: str = ""
@@ -108,12 +128,28 @@ class Settings(BaseSettings):
         return f"sqlite+aiosqlite:///{self.data_dir / 'police.db'}"
 
 
-def normalize_recipient(value: str) -> str:
+def normalize_phone(value: str, country: str | None = None) -> str | None:
+    """Any common way of writing a number (03120051793, 0092 312..., +92 312...) -> E.164, using the
+    person's country for local formats. None if it is not a valid number."""
+    import phonenumbers
+
+    region = (country or get_settings().default_country or "PK").upper()
+    try:
+        n = phonenumbers.parse(value.strip(), region)
+    except phonenumbers.NumberParseException:
+        return None
+    return phonenumbers.format_number(n, phonenumbers.PhoneNumberFormat.E164) if phonenumbers.is_valid_number(n) else None
+
+
+def normalize_recipient(value: str, country: str | None = None) -> str:
     value = value.strip()
     if value.lower().startswith("discord:"):
         return "discord:" + value.split(":", 1)[1].strip()
     if "@" in value:
         return value.lower()
+    phone = normalize_phone(value, country)
+    if phone:
+        return phone
     digits = "".join(c for c in value if c.isdigit())
     return ("+" + digits) if digits else value
 

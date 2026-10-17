@@ -129,6 +129,7 @@ function outboundDetail(d: any, sentLabel: string): { state: RowState; detail: s
   if (d.status === "sent") return { state: "done", detail: sentLabel };
   if (d.status === "dry_run") return { state: "done", detail: `${sentLabel} (dry run)` };
   if (d.status === "blocked") return { state: "off", detail: "Blocked by the sandbox allowlist" };
+  if (d.status === "skipped") return { state: "off", detail: "Not set up on this server" };
   if (d.status === "duplicate") return { state: "done", detail: "Already sent" };
   return { state: "failed", detail: d.error || "Failed" };
 }
@@ -487,7 +488,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
                 <ShieldCheck size={16} className="mt-0.5 shrink-0 text-ink-2" aria-hidden />
                 <div>
                   <dt className="font-medium">Your privacy</dt>
-                  <dd className="text-ink-2">No account, no name needed. Your details only ever go to the police, never to the public. Quick exit leaves instantly.</dd>
+                  <dd className="text-ink-2">No account required. Your details only ever go to the police, never to the public. Quick exit leaves instantly.</dd>
                 </div>
               </div>
             </dl>

@@ -115,12 +115,32 @@ class MacroDroidCaller:
     The macro is triggered by its webhook URL; `to` and `text` are passed along for macros that use them."""
 
     def place_call(self, to: str, say_text: str) -> str:
-        url = get_settings().macrodroid_call_url.strip()
+        url = get_settings().macrodroid_call_endpoint
         if not url:
-            raise RuntimeError("MacroDroid is not configured (MACRODROID_CALL_URL)")
+            raise RuntimeError("MacroDroid is not configured (MACRODROID_URL + MACRODROID_CALL_ID)")
         r = httpx.get(url, params={"to": to, "text": say_text[:300]}, timeout=15)
+        if r.status_code == 404:
+            raise RuntimeError("MacroDroid trigger not found: check MACRODROID_CALL_ID matches the macro's webhook identifier")
         r.raise_for_status()
         return f"macrodroid-{uuid.uuid4().hex[:8]}"
+
+
+def macrodroid_sms(to: str, body: str) -> str:
+    """Free SMS from the spare phone's SIM: a MacroDroid macro sends [lv=text] to [lv=to]."""
+    url = get_settings().macrodroid_sms_endpoint
+    if not url:
+        raise RuntimeError("MacroDroid SMS is not configured (MACRODROID_URL + MACRODROID_SMS_ID)")
+    r = httpx.get(url, params={"to": to, "text": body[:600]}, timeout=15)
+    if r.status_code == 404:
+        raise RuntimeError("MacroDroid SMS trigger not found: check MACRODROID_SMS_ID matches the macro's webhook identifier")
+    r.raise_for_status()
+    return f"macrodroid-{uuid.uuid4().hex[:8]}"
+
+
+def send_sms(to: str, body: str) -> str:
+    if get_settings().sms_provider == "macrodroid":
+        return macrodroid_sms(to, body)
+    return sms_provider_factory().send_sms(to, body)
 
 
 def place_call(to: str, say_text: str) -> str:
@@ -168,10 +188,29 @@ def call_provider_factory():
     return place_call
 
 
+def sms_sender_factory():
+    return send_sms
+
+
 def twiml_say(text: str) -> str:
     safe = escape(text)
     say = f'<Say voice="alice"><prosody rate="slow">{safe}</prosody></Say>'
     return f"<Response>{say}<Pause length=\"1\"/>{say}</Response>"
+
+
+def provider_configured(kind: str) -> bool:
+    s = get_settings()
+    if kind == "sms":
+        if s.sms_provider == "macrodroid":
+            return bool(s.macrodroid_sms_endpoint)
+        return bool(s.twilio_account_sid and s.twilio_auth_token and s.twilio_from_number)
+    if kind == "call":
+        if s.call_provider == "macrodroid":
+            return bool(s.macrodroid_call_endpoint)
+        return bool(s.twilio_account_sid and s.twilio_auth_token and s.twilio_from_number)
+    if kind in ("community_email", "news_email"):
+        return bool(s.smtp_user and s.smtp_app_password)
+    return True  # discord: the webhook itself is the configuration
 
 
 def is_valid_recipient(kind: str, recipient: str) -> bool:
@@ -215,6 +254,9 @@ class OutboundGuard:
             res = DispatchResult(to, kind, "dry_run", provider_id=f"dry_{uuid.uuid4().hex[:12]}", mode=mode)
         elif mode == "sandbox" and to not in s.allowlist and not (kind == "discord" and "discord:*" in s.allowlist):
             res = DispatchResult(to, kind, "blocked", error="recipient not in OUTBOUND_ALLOWLIST", mode=mode)
+        elif not provider_configured(kind):
+            # Not an error: this channel simply is not set up on this server.
+            res = DispatchResult(to, kind, "skipped", error=f"no {kind} provider configured", mode=mode)
         else:
             res = await self._send(kind, to, payload, mode)
 
@@ -264,7 +306,7 @@ class OutboundGuard:
         for attempt in range(MAX_SEND_ATTEMPTS):
             try:
                 if kind == "sms":
-                    sid = await asyncio.to_thread(sms_provider_factory().send_sms, to, payload["body"])
+                    sid = await asyncio.to_thread(sms_sender_factory(), to, payload["body"])
                 elif kind == "call":
                     sid = await asyncio.to_thread(call_provider_factory(), to, payload["say_text"])
                 elif kind == "discord":

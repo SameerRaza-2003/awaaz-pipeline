@@ -1,4 +1,4 @@
-.PHONY: install dev dev-phone backend frontend frontend-https test lint e2e eval eval-quick matching-eval seed demo-reset
+.PHONY: install dev dev-http dev-phone backend frontend frontend-https test lint e2e eval eval-quick matching-eval seed demo-reset
 
 install:
 	cd backend && uv sync
@@ -10,13 +10,17 @@ backend:
 frontend:
 	cd frontend && npx next dev -H 0.0.0.0
 
+# HTTPS with a self-signed certificate, reachable from phones on the same Wi-Fi:
+# phones only share GPS location with https pages. Open https://<this computer's IP>:3000
+# (or https://localhost:3000) and accept the certificate warning once.
 dev:
-	$(MAKE) -j2 backend frontend
-
-# Same, but HTTPS with a self-signed certificate: phones only share GPS location over HTTPS.
-# Open https://<this computer's IP>:3000 on the phone and accept the certificate warning once.
-dev-phone:
 	$(MAKE) -j2 backend frontend-https
+
+dev-phone: dev
+
+# Plain http (location will not work on phones).
+dev-http:
+	$(MAKE) -j2 backend frontend
 
 frontend-https:
 	cd frontend && npx next dev --experimental-https -H 0.0.0.0

@@ -1,12 +1,13 @@
 import secrets
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from app import sessions
+from app import accounts, sessions
+from app.api.accounts import optional_user
 from app.api.sse import event_stream, parse_last_id
-from app.config import get_settings, normalize_recipient
+from app.config import get_settings, normalize_phone, normalize_recipient
 from app.events import bus
 from app.agents.emergency_agents import send_discord
 from app.outbound import discord_recipient, is_valid_recipient
@@ -52,9 +53,14 @@ async def require_session(session_id: str):
 
 
 @router.post("")
-async def create_session(body: CreateSession | None = None):
+async def create_session(body: CreateSession | None = None, user_id: str | None = Depends(optional_user)):
     body = body or CreateSession()
-    row = await sessions.create_session(body.locale, body.country)
+    locale, country = body.locale, body.country
+    if user_id:
+        profile = accounts.profile_of(await accounts.get_user(user_id))
+        locale = profile.get("locale") or locale
+        country = country or profile.get("country")
+    row = await sessions.create_session(locale, country, user_id=user_id)
     return {"session_id": row.id, "country": row.country, "locale": row.locale}
 
 
@@ -80,6 +86,7 @@ async def get_session(session_id: str):
         "country": row.country,
         "locale": row.locale,
         "trusted_contact": trusted_contact_view(contact, discord),
+        "signed_in": bool(row.user_id),
         "transcript": state.get("transcript", []),
         "drafts": state.get("drafts"),
         "receipt": state.get("receipt"),
@@ -91,16 +98,19 @@ async def put_settings(session_id: str, body: SettingsIn):
     await require_session(session_id)
     if body.trusted_contact:
         tc = body.trusted_contact
-        phone = normalize_recipient(tc.phone) if tc.phone and tc.phone.strip() else None
-        if phone and not is_valid_recipient("sms", phone):
-            raise HTTPException(422, "phone must be in international format, e.g. +923001234567")
+        sess = await sessions.get_session(session_id)
+        phone = None
+        if tc.phone and tc.phone.strip():
+            phone = normalize_phone(tc.phone, body.country or (sess.country if sess else None))
+            if not phone:
+                raise HTTPException(422, "Enter a valid phone number, e.g. 03001234567 or +923001234567")
         webhook = (tc.discord_webhook or "").strip() or None
         if webhook and not discord_recipient(webhook):
             raise HTTPException(422, "Discord webhook must look like https://discord.com/api/webhooks/<id>/<token>")
         if not phone and not webhook:
             raise HTTPException(422, "add a phone number or a Discord webhook for your trusted contact")
         if webhook is None and tc.discord_webhook is None:
-            webhook = await sessions.get_contact_discord(session_id)  # keep the saved one if the field was not sent
+            webhook = await sessions.get_own_discord(session_id)  # keep her own saved one; never copy fallbacks in
         await sessions.set_trusted_contact(session_id, tc.name.strip(), phone, webhook)
     await sessions.update_settings(session_id, country=body.country, locale=body.locale)
     return {"ok": True}
