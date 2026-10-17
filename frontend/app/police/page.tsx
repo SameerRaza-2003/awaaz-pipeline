@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown, LogOut } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError, Health, store } from "@/lib/api";
 import { useEvents } from "@/lib/useEvents";
 import { fmtCountdown } from "@/lib/workflow";
@@ -30,12 +31,32 @@ type Detail = Row & {
 };
 
 const STATUS_STYLE: Record<string, string> = {
-  NEW: "bg-warn-soft text-warn",
-  ACKNOWLEDGED: "bg-run-soft text-run",
-  IN_PROGRESS: "bg-run-soft text-run",
-  RESOLVED: "bg-ok-soft text-ok",
-  REJECTED: "bg-surface-2 text-ink-2",
+  NEW: "bg-hold-soft text-hold",
+  ACKNOWLEDGED: "bg-info-soft text-info",
+  IN_PROGRESS: "bg-info-soft text-info",
+  RESOLVED: "bg-safe-soft text-safe-ink",
+  REJECTED: "bg-sunken text-ink-2",
 };
+const ADDRESSED = new Set(["IN_PROGRESS", "RESOLVED", "REJECTED"]);
+const human = (s: string | null) => (s ? s.replaceAll("_", " ").replace("/", " / ").replace(/^\w/, (c) => c.toUpperCase()) : "Not given");
+const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+type Urgency = { key: string; label: string; tone: string; sort: number };
+function urgency(r: Row, now: number): Urgency {
+  if (r.escalated_to_news) return { key: "escalated", label: "Sent to news", tone: "text-danger-ink font-semibold", sort: 0 };
+  if (ADDRESSED.has(r.status)) return { key: "addressed", label: "Addressed", tone: "text-safe-ink", sort: 5 };
+  if (r.escalation_cancelled) return { key: "cancelled", label: "Escalation cancelled", tone: "text-muted", sort: 6 };
+  if (r.escalation_state !== "pending" || !r.escalation_due_at) return { key: "none", label: "No deadline", tone: "text-muted", sort: 7 };
+  const ms = new Date(r.escalation_due_at).getTime() - now;
+  const cd = fmtCountdown(r.escalation_due_at, now);
+  if (ms <= 0) return { key: "overdue", label: cd.text, tone: "text-danger-ink font-semibold", sort: 1 };
+  if (ms < 6 * 3_600_000) return { key: "soon", label: `${cd.text} left`, tone: "text-hold font-semibold", sort: 2 };
+  return { key: "ok", label: `${cd.text} left`, tone: "text-ink-2", sort: 3 };
+}
+
+function StatusChip({ status }: { status: string }) {
+  return <span className={`chip ${STATUS_STYLE[status] || "bg-sunken text-ink-2"}`}>{human(status)}</span>;
+}
 
 function Login({ onToken }: { onToken: (t: string) => void }) {
   const [u, setU] = useState("");
@@ -47,34 +68,63 @@ function Login({ onToken }: { onToken: (t: string) => void }) {
       const r = await api<{ token: string }>("/api/police/login", { body: { username: u, password: p } });
       onToken(r.token);
     } catch {
-      setErr("Invalid username or password");
+      setErr("Wrong username or password.");
     }
   };
   return (
-    <div className="flex flex-1 items-center justify-center p-4">
-      <form onSubmit={submit} className="card w-full max-w-sm space-y-3 p-6">
-        <h1 className="text-xl font-semibold">Police dashboard</h1>
-        <p className="text-sm text-muted">Authorised officers only. Demo credentials are set in the server .env.</p>
-        <input className="field" placeholder="Username" autoComplete="username" value={u} onChange={(e) => setU(e.target.value)} />
-        <input className="field" placeholder="Password" type="password" autoComplete="current-password" value={p} onChange={(e) => setP(e.target.value)} />
-        {err && <p className="text-sm text-danger">{err}</p>}
-        <button className="btn btn-primary w-full">Sign in</button>
+    <div className="flex flex-1 items-center justify-center px-5 py-10">
+      <form onSubmit={submit} className="w-full max-w-sm space-y-5 rounded-md border border-line bg-surface p-6">
+        <div>
+          <h1 className="text-title font-semibold">Complaint queue</h1>
+          <p className="mt-1 text-small text-ink-2">For authorised officers. Demo credentials are set on the server.</p>
+        </div>
+        <div>
+          <label htmlFor="pu" className="text-small font-semibold">
+            Username
+          </label>
+          <input id="pu" className="field mt-1 !min-h-11" autoComplete="username" value={u} onChange={(e) => setU(e.target.value)} />
+        </div>
+        <div>
+          <label htmlFor="pp" className="text-small font-semibold">
+            Password
+          </label>
+          <input id="pp" className="field mt-1 !min-h-11" type="password" autoComplete="current-password" value={p} onChange={(e) => setP(e.target.value)} />
+        </div>
+        {err && (
+          <p className="text-small text-danger-ink" role="alert">
+            {err}
+          </p>
+        )}
+        <button className="btn btn-primary btn-compact w-full !min-h-11">Sign in</button>
       </form>
     </div>
   );
 }
 
+type SortKey = "received" | "status" | "deadline" | "type" | "city";
+const FILTERS = [
+  ["all", "All"],
+  ["open", "Needs action"],
+  ["soon", "Due within 6 h"],
+  ["overdue", "Overdue"],
+  ["escalated", "Sent to news"],
+] as const;
+
 export default function PolicePage() {
   const [token, setToken] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [sel, setSel] = useState<string | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [newStatus, setNewStatus] = useState("");
   const [note, setNote] = useState("");
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [health, setHealth] = useState<Health | null>(null);
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "deadline", dir: 1 });
+  const [filter, setFilter] = useState<(typeof FILTERS)[number][0]>("all");
+  const detailRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setToken(store.get("awaaz_police_token"));
@@ -94,6 +144,7 @@ export default function PolicePage() {
       const r = await api<{ complaints: Row[]; statuses: string[] }>("/api/police/complaints", { token });
       setRows(r.complaints);
       setStatuses(r.statuses);
+      setLoaded(true);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) logout();
     }
@@ -132,7 +183,7 @@ export default function PolicePage() {
     }
   }, [token, logout]);
 
-  const { events } = useEvents(token ? `/api/police/events?token=${encodeURIComponent(token)}` : null, tokenStillValid);
+  const { events, connected } = useEvents(token ? `/api/police/events?token=${encodeURIComponent(token)}` : null, tokenStillValid);
   const lastId = events[events.length - 1]?.id;
   useEffect(() => {
     if (lastId) {
@@ -142,29 +193,75 @@ export default function PolicePage() {
   }, [lastId, load, loadDetail]);
 
   const activity = useMemo(
-    () =>
-      events
-        .filter((e) => (e.kind === "status" || e.kind === "error" || e.kind === "step") && e.data.message)
-        .slice(-6)
-        .reverse(),
+    () => events.filter((e) => (e.kind === "status" || e.kind === "error" || e.kind === "step") && e.data.message).slice(-5).reverse(),
     [events],
   );
 
-  const save = async () => {
+  const view = useMemo(() => {
+    const withU = rows.map((r) => ({ r, u: urgency(r, now) }));
+    const filtered = withU.filter(({ u }) =>
+      filter === "all" ? true : filter === "open" ? ["ok", "soon", "overdue"].includes(u.key) : u.key === filter,
+    );
+    const val = ({ r, u }: { r: Row; u: Urgency }): number | string => {
+      switch (sort.key) {
+        case "received":
+          return new Date(r.received_at).getTime();
+        case "status":
+          return r.status;
+        case "type":
+          return r.harassment_type || "";
+        case "city":
+          return r.city || "";
+        default:
+          return u.sort * 1e13 + (r.escalation_due_at ? new Date(r.escalation_due_at).getTime() : 0);
+      }
+    };
+    return filtered.sort((a, b) => (val(a) > val(b) ? 1 : val(a) < val(b) ? -1 : 0) * sort.dir);
+  }, [rows, now, filter, sort]);
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: rows.length, open: 0, soon: 0, overdue: 0, escalated: 0 };
+    for (const r of rows) {
+      const u = urgency(r, now).key;
+      if (["ok", "soon", "overdue"].includes(u)) c.open += 1;
+      if (u in c) c[u] += 1;
+    }
+    return c;
+  }, [rows, now]);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!token || !sel) return;
     try {
       await api(`/api/police/complaints/${sel}/status`, { method: "PATCH", token, body: { status: newStatus, note: note || undefined } });
-      setMsg("Status saved.");
+      setMsg({ ok: true, text: "Status saved." });
       setNote("");
       await Promise.all([load(), loadDetail()]);
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Could not save");
+    } catch (err) {
+      setMsg({ ok: false, text: err instanceof Error ? err.message : "Could not save" });
     }
   };
 
   const fastForward = async (publicRef: string) => {
-    await api(`/api/demo/fast-forward/${publicRef}`, { body: {} }).catch((e) => setMsg(e.message));
+    await api(`/api/demo/fast-forward/${publicRef}`, { body: {} }).catch((e) => setMsg({ ok: false, text: e.message }));
   };
+
+  const select = (ref: string) => {
+    setSel(ref);
+    detailRef.current?.scrollTo({ top: 0 });
+    setTimeout(() => detailRef.current?.focus({ preventScroll: true }), 50);
+  };
+
+  const sortBy = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: s.dir === 1 ? -1 : 1 } : { key, dir: key === "received" ? -1 : 1 }));
+  const ariaSort = (key: SortKey) => (sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : "none");
+  const SortIcon = ({ k }: { k: SortKey }) =>
+    sort.key !== k ? (
+      <ArrowUpDown size={13} strokeWidth={1.75} className="text-muted" aria-hidden />
+    ) : sort.dir === 1 ? (
+      <ArrowUp size={13} strokeWidth={2} aria-hidden />
+    ) : (
+      <ArrowDown size={13} strokeWidth={2} aria-hidden />
+    );
 
   if (!token)
     return (
@@ -176,138 +273,215 @@ export default function PolicePage() {
       />
     );
 
+  const th = (key: SortKey, label: string, cls = "") => (
+    <th scope="col" aria-sort={ariaSort(key)} className={`px-3 py-2 ${cls}`}>
+      <button onClick={() => sortBy(key)} className="label inline-flex min-h-8 items-center gap-1 !text-ink-2 hover:!text-ink">
+        {label}
+        <SortIcon k={key} />
+      </button>
+    </th>
+  );
+
   return (
-    <div className="scroll-thin mx-auto min-h-0 w-full max-w-[1560px] flex-1 space-y-4 overflow-y-auto p-3 sm:p-4">
-      <div className="card flex items-center gap-3 overflow-hidden px-4 py-2" aria-live="polite">
-        <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted">Live activity</span>
-        <div className="flex min-w-0 flex-1 gap-4 overflow-x-auto whitespace-nowrap text-sm">
-          {activity.length === 0 && <span className="text-muted">Waiting for activity…</span>}
-          {activity.map((e) => (
-            <span key={e.id} className={e.kind === "error" ? "text-danger" : ""}>
-              <span className="text-muted">{e.ts.slice(11, 19)}</span> {e.data.message}
-            </span>
+    <div className="flex min-h-0 flex-1 flex-col text-small">
+      <h1 className="sr-only">Complaint queue</h1>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-surface px-4 py-2 lg:px-6">
+        <div role="group" aria-label="Filter complaints" className="flex flex-wrap gap-1">
+          {FILTERS.map(([k, label]) => (
+            <button
+              key={k}
+              aria-pressed={filter === k}
+              onClick={() => setFilter(k)}
+              className={`min-h-9 rounded-sm px-2.5 text-caption font-semibold ${filter === k ? "bg-ink text-paper" : "text-ink-2 hover:bg-sunken"}`}
+            >
+              {label} <span className="tabular font-mono">{counts[k]}</span>
+            </button>
           ))}
         </div>
-        <button className="btn btn-ghost !min-h-9 !py-1 text-sm" onClick={logout}>
-          Sign out
+        <p className="min-w-0 flex-1 truncate text-caption text-ink-2" role="log" aria-live="polite" aria-label="Live activity">
+          <span className={`mr-2 inline-block h-2 w-2 rounded-full ${connected ? "bg-safe" : "bg-line-strong"}`} aria-hidden />
+          {activity[0] ? (
+            <>
+              <span className="tabular font-mono text-muted">{activity[0].ts.slice(11, 19)}</span> {activity[0].data.message}
+            </>
+          ) : (
+            "Live. Waiting for activity."
+          )}
+        </p>
+        <button className="btn btn-secondary btn-compact" onClick={logout}>
+          <LogOut size={16} strokeWidth={1.75} aria-hidden /> Sign out
         </button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <section className="card overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
+      <div className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+        <section className="scroll-thin min-h-0 overflow-auto lg:border-r lg:border-line" aria-label="Complaints" tabIndex={0}>
+          <table className="w-full border-collapse text-left">
+            <caption className="sr-only">Complaints, sortable. Select a row to open the case file.</caption>
+            <thead className="sticky top-0 z-(--z-sticky) border-b border-line-strong bg-paper">
               <tr>
-                <th className="p-3">Public ref</th>
-                <th className="p-3">Received</th>
-                <th className="p-3">Type</th>
-                <th className="p-3">City</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Escalation</th>
+                <th scope="col" className="label px-3 py-2 !text-ink-2">
+                  Reference
+                </th>
+                {th("received", "Received")}
+                {th("type", "Type", "hidden md:table-cell")}
+                {th("city", "City", "hidden md:table-cell")}
+                {th("status", "Status")}
+                {th("deadline", "24 h deadline")}
               </tr>
             </thead>
-            <tbody>
-              {rows.length === 0 && (
+            <tbody className="divide-y divide-line">
+              {!loaded ? (
                 <tr>
-                  <td colSpan={6} className="p-4 text-muted">
-                    No complaints yet.
+                  <td colSpan={6} className="px-3 py-6 text-muted">
+                    Loading complaints…
                   </td>
                 </tr>
-              )}
-              {rows.map((r) => {
-                const cd = fmtCountdown(r.escalation_due_at, now);
-                const pending = r.escalation_state === "pending" && !r.escalation_cancelled;
-                return (
+              ) : view.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-3 py-6 text-muted">
+                    {rows.length === 0 ? "No complaints yet. New ones appear here as soon as they are submitted." : "No complaints match this filter."}
+                  </td>
+                </tr>
+              ) : (
+                view.map(({ r, u }) => (
                   <tr
                     key={r.police_ref}
-                    onClick={() => setSel(r.police_ref)}
-                    className={`cursor-pointer border-b border-line hover:bg-surface-2 ${sel === r.police_ref ? "bg-surface-2" : ""}`}
+                    tabIndex={0}
+                    aria-selected={sel === r.police_ref}
+                    onClick={() => select(r.police_ref)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        select(r.police_ref);
+                      }
+                      if (e.key === "ArrowDown") (e.currentTarget.nextElementSibling as HTMLElement | null)?.focus();
+                      if (e.key === "ArrowUp") (e.currentTarget.previousElementSibling as HTMLElement | null)?.focus();
+                    }}
+                    className={`cursor-pointer align-top hover:bg-sunken ${sel === r.police_ref ? "bg-info-soft" : ""}`}
                   >
-                    <td className="p-3">
-                      <div className="font-mono font-semibold">{r.public_ref}</div>
-                      <div className="font-mono text-xs text-muted">{r.police_ref}</div>
+                    <td className="px-3 py-2.5">
+                      <span className="block whitespace-nowrap font-mono font-semibold">{r.public_ref}</span>
+                      <span className="block font-mono text-caption text-muted">{r.police_ref}</span>
                     </td>
-                    <td className="p-3">{new Date(r.received_at).toLocaleString()}</td>
-                    <td className="p-3">{r.harassment_type}</td>
-                    <td className="p-3">{r.city}</td>
-                    <td className="p-3">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLE[r.status] || ""}`}>{r.status}</span>
+                    <td className="tabular whitespace-nowrap px-3 py-2.5">{when(r.received_at)}</td>
+                    <td className="hidden px-3 py-2.5 md:table-cell">{human(r.harassment_type)}</td>
+                    <td className="hidden px-3 py-2.5 md:table-cell">{r.city || "Not given"}</td>
+                    <td className="px-3 py-2.5">
+                      <StatusChip status={r.status} />
                     </td>
-                    <td className="p-3">
-                      {r.escalated_to_news && <span className="rounded-full bg-danger-soft px-2 py-0.5 text-xs font-semibold text-danger">escalated to news</span>}
-                      {!r.escalated_to_news && pending && <span className={`font-mono text-xs ${cd.overdue ? "text-danger font-semibold" : ""}`}>{cd.text}</span>}
-                      {!r.escalated_to_news && !pending && <span className="text-xs text-muted">{r.escalation_cancelled ? "cancelled" : r.escalation_state ?? "—"}</span>}
-                    </td>
+                    <td className={`tabular whitespace-nowrap px-3 py-2.5 font-mono ${u.tone}`}>{u.label}</td>
                   </tr>
-                );
-              })}
+                ))
+              )}
             </tbody>
           </table>
         </section>
 
-        <section className="card p-4">
-          {!detail && <p className="text-muted">Select a complaint to see the full account.</p>}
-          {detail && (
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-mono text-lg font-semibold">{detail.police_ref}</h2>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLE[detail.status] || ""}`}>{detail.status}</span>
-                <span className="text-xs text-muted">public ref {detail.public_ref}</span>
-              </div>
-              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-                <dt className="text-muted">Complainant</dt>
-                <dd>{detail.complainant_name || "—"}</dd>
-                <dt className="text-muted">Contact</dt>
-                <dd>{detail.complainant_contact || "—"}</dd>
-                <dt className="text-muted">Address</dt>
-                <dd>{detail.complainant_address || "—"}</dd>
-                <dt className="text-muted">Accused</dt>
-                <dd>{detail.accused || "—"}</dd>
-                <dt className="text-muted">Location</dt>
-                <dd>
-                  {detail.city || "—"}, {detail.country}
-                </dd>
+        <section
+          ref={detailRef}
+          tabIndex={-1}
+          className="scroll-thin min-h-0 overflow-y-auto border-t border-line bg-surface outline-none lg:border-t-0"
+          aria-label="Case file"
+        >
+          {!detail ? (
+            <div className="px-6 py-10 text-ink-2">
+              <h2 className="text-lead font-semibold text-ink">Case file</h2>
+              <p className="mt-1">Select a complaint to read the full account and update its status. Use the arrow keys and Enter in the table.</p>
+            </div>
+          ) : (
+            <article className="space-y-6 px-6 py-6">
+              <header>
+                <p className="label">Case file</p>
+                <div className="mt-1 flex flex-wrap items-center gap-3">
+                  <h2 className="font-mono text-title font-semibold">{detail.police_ref}</h2>
+                  <StatusChip status={detail.status} />
+                </div>
+                <p className="mt-1 text-caption text-muted">
+                  Public reference <span className="font-mono">{detail.public_ref}</span> · received {when(detail.received_at)}
+                </p>
+                <p className={`tabular mt-2 font-mono ${urgency(detail, now).tone}`}>{urgency(detail, now).label}</p>
+              </header>
+
+              <dl className="grid grid-cols-[8.5rem_1fr] gap-x-4 gap-y-2 border-y border-line py-4">
+                {[
+                  ["Complainant", detail.complainant_name],
+                  ["Contact", detail.complainant_contact],
+                  ["Address", detail.complainant_address],
+                  ["Accused", detail.accused],
+                  ["Type", human(detail.harassment_type)],
+                  ["Location", `${detail.city || "Not given"}, ${detail.country}`],
+                ].map(([k, v]) => (
+                  <div key={k as string} className="contents">
+                    <dt className="text-muted">{k}</dt>
+                    <dd className="[overflow-wrap:anywhere]">{v || "Not given"}</dd>
+                  </div>
+                ))}
               </dl>
-              <div>
-                <h3 className="text-sm font-semibold">Full account</h3>
-                <p className="mt-1 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-surface-2 p-3 text-sm" dir="auto">
+
+              <section aria-labelledby="account-h">
+                <h3 id="account-h" className="label">
+                  Full account
+                </h3>
+                <p className="mt-2 max-w-prose whitespace-pre-wrap text-body leading-relaxed" dir="auto">
                   {detail.full_text}
                 </p>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">Update status</h3>
-                <p className="text-xs text-muted">IN_PROGRESS, RESOLVED or REJECTED before the deadline prevents news escalation. ACKNOWLEDGED alone does not.</p>
-                <div className="flex flex-wrap gap-2">
-                  <select className="field !w-auto" value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
-                    {statuses.map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
-                  </select>
-                  <input className="field flex-1" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
-                  <button className="btn btn-primary" onClick={save}>
-                    Save
-                  </button>
+              </section>
+
+              <form onSubmit={save} className="space-y-3 border-t border-line pt-5" aria-labelledby="status-h">
+                <h3 id="status-h" className="label">
+                  Update status
+                </h3>
+                <p className="text-caption text-muted">In progress, Resolved or Rejected before the deadline stops the news escalation. Acknowledged alone does not.</p>
+                <div className="grid gap-3 sm:grid-cols-[12rem_1fr]">
+                  <div>
+                    <label htmlFor="new-status" className="sr-only">
+                      New status
+                    </label>
+                    <select id="new-status" className="field !min-h-11 text-small" value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
+                      {statuses.map((s) => (
+                        <option key={s} value={s}>
+                          {human(s)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="status-note" className="sr-only">
+                      Note
+                    </label>
+                    <input id="status-note" className="field !min-h-11 text-small" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+                  </div>
                 </div>
-                {msg && <p className="text-sm">{msg}</p>}
-                {health?.demo_routes && detail.escalation_state === "pending" && !detail.escalation_cancelled && (
-                  <button className="btn btn-ghost text-sm" onClick={() => fastForward(detail.public_ref)}>
-                    Demo: fast-forward to deadline
-                  </button>
-                )}
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold">History</h3>
-                <ol className="mt-1 space-y-1 text-sm">
+                <div className="flex flex-wrap items-center gap-3">
+                  <button className="btn btn-primary btn-compact">Save status</button>
+                  {health?.demo_routes && detail.escalation_state === "pending" && !detail.escalation_cancelled && (
+                    <button type="button" className="btn btn-quiet btn-compact" onClick={() => fastForward(detail.public_ref)}>
+                      Demo: skip to the deadline
+                    </button>
+                  )}
+                  {msg && (
+                    <span className={`text-small font-semibold ${msg.ok ? "text-safe-ink" : "text-danger-ink"}`} role="status">
+                      {msg.text}
+                    </span>
+                  )}
+                </div>
+              </form>
+
+              <section aria-labelledby="history-h" className="border-t border-line pt-5">
+                <h3 id="history-h" className="label">
+                  History
+                </h3>
+                <ol className="mt-2 space-y-2">
                   {detail.history.map((h, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="text-muted">{new Date(h.changed_at).toLocaleString()}</span>
-                      <span className="font-semibold">{h.status}</span>
+                    <li key={i} className="grid grid-cols-[7.5rem_auto_1fr] items-baseline gap-3">
+                      <span className="tabular font-mono text-caption text-muted">{when(h.changed_at)}</span>
+                      <StatusChip status={h.status} />
                       <span className="text-ink-2">{h.note}</span>
                     </li>
                   ))}
                 </ol>
-              </div>
-            </div>
+              </section>
+            </article>
           )}
         </section>
       </div>

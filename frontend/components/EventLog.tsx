@@ -11,13 +11,11 @@ const GROUPS: Record<string, string[]> = {
   Errors: ["error"],
 };
 
-const COLOR: Record<string, string> = {
-  error: "text-danger",
-  outbound: "text-ok",
-  "tool.start": "text-run",
-  "tool.end": "text-run",
-  "agent.start": "text-accent",
-  "agent.end": "text-accent",
+const TONE: Record<string, string> = {
+  error: "text-danger-ink",
+  outbound: "text-safe-ink",
+  "tool.start": "text-info",
+  "tool.end": "text-info",
 };
 
 export function EventLog({ events }: { events: AwaazEvent[] }) {
@@ -38,32 +36,60 @@ export function EventLog({ events }: { events: AwaazEvent[] }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center gap-2 border-b border-line p-2.5">
-        <input className="field !w-48 !py-1.5 text-sm" placeholder="Filter" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2.5">
+        <label className="sr-only" htmlFor="event-filter">
+          Filter events
+        </label>
+        <input id="event-filter" className="field !min-h-10 !w-48 !py-1.5 text-small" placeholder="Filter" value={q} onChange={(e) => setQ(e.target.value)} />
         {Object.keys(GROUPS).map((g) => (
           <button
             key={g}
             onClick={() => toggle(g)}
             aria-pressed={!hidden.has(g)}
-            className={`rounded-md border px-2 py-1 text-xs ${hidden.has(g) ? "border-line text-muted" : "border-line-strong bg-surface-2 text-ink"}`}
+            className={`min-h-10 rounded-sm border px-2.5 text-caption font-semibold ${
+              hidden.has(g) ? "border-line text-muted line-through" : "border-line-strong bg-surface text-ink"
+            }`}
           >
             {g}
           </button>
         ))}
-        <span className="ml-auto font-mono text-xs text-muted">{shown.length} events</span>
+        <span className="tabular ml-auto font-mono text-caption text-muted" aria-live="polite">
+          {shown.length} events
+        </span>
       </div>
-      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto font-mono text-[11px]">
-        {shown.length === 0 && <p className="p-4 font-sans text-sm text-muted">No events yet.</p>}
-        {shown.map((e) => (
-          <div key={e.id} className="grid grid-cols-[4.5rem_6.5rem_1fr] gap-x-3 border-b border-line px-3 py-1.5">
-            <span className="text-muted">{e.ts.slice(11, 19)}</span>
-            <span className={`font-medium ${COLOR[e.kind] || "text-ink-2"}`}>{e.kind}</span>
-            <span className="min-w-0">
-              <span className="text-ink">{e.node || e.agent || ""}</span>
-              <span className="block break-words text-muted">{JSON.stringify(e.data)}</span>
-            </span>
-          </div>
-        ))}
+      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto font-mono text-caption" tabIndex={0} aria-label="Event log">
+        {shown.length === 0 ? (
+          <p className="p-5 font-sans text-small text-muted">No events yet.</p>
+        ) : (
+          <table className="w-full border-collapse">
+            <caption className="sr-only">Raw event stream, oldest first</caption>
+            <thead className="sticky top-0 bg-sunken text-left">
+              <tr className="border-b border-line">
+                <th scope="col" className="label px-4 py-2 font-sans">
+                  Time
+                </th>
+                <th scope="col" className="label px-2 py-2 font-sans">
+                  Kind
+                </th>
+                <th scope="col" className="label px-2 py-2 font-sans">
+                  Node and data
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((e) => (
+                <tr key={e.id} className="border-b border-line align-top">
+                  <td className="tabular whitespace-nowrap px-4 py-1.5 text-muted">{e.ts.slice(11, 19)}</td>
+                  <td className={`whitespace-nowrap px-2 py-1.5 font-semibold ${TONE[e.kind] || "text-ink-2"}`}>{e.kind}</td>
+                  <td className="px-2 py-1.5 [overflow-wrap:anywhere]">
+                    <span className="text-ink">{e.node || e.agent || ""}</span>
+                    <span className="block text-muted">{JSON.stringify(e.data)}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

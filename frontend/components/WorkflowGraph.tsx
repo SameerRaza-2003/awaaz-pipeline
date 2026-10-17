@@ -1,117 +1,99 @@
 "use client";
 
 import "@xyflow/react/dist/style.css";
-import { Background, Controls, Edge, Handle, MarkerType, MiniMap, Node, NodeProps, Position, ReactFlow } from "@xyflow/react";
-import { AlertTriangle, Bot, CheckCircle2, Clock, GitFork, Loader2, MinusCircle, UserRound } from "lucide-react";
+import { Background, Controls, Edge, Handle, MarkerType, Node, NodeProps, Position, ReactFlow } from "@xyflow/react";
+import { Bot, Clock, GitFork, UserRound } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
+import { STATE_LABEL, StatusMark } from "@/components/WorkflowStatus";
 import { AgentCard, EDGES, NODES, NodeState, fmtCountdown } from "@/lib/workflow";
 
-const W = 240;
-const H = 92;
-const GAP = 48;
-const PAD = 22;
-const LANE_HEAD = 44;
+const W = 236;
+const H = 78;
+const GAP = 26;
+const PAD = 16;
+const LANE_HEAD = 34;
+
+const COL = [0, 300, 600];
+const TOP = 140; // first row of the Emergency and Report lanes
+const BOTTOM = TOP + 3 * (H + GAP) + 50; // first row of the Police, Public and Authority lanes
+const row = (base: number, i: number) => base + i * (H + GAP);
 
 const POS: Record<string, { x: number; y: number }> = {
-  danger_gate: { x: 340, y: 0 },
-  location_agent: { x: 0, y: 190 },
-  twilio_agent: { x: 0, y: 330 },
-  intake_agent: { x: 340, y: 190 },
-  drafting_agent: { x: 340, y: 330 },
-  user_review: { x: 340, y: 470 },
-  police_dispatch_agent: { x: 0, y: 700 },
-  escalation_timer: { x: 0, y: 840 },
-  police_status_agent: { x: 0, y: 980 },
-  gmail_news: { x: 0, y: 1120 },
-  matching_agent: { x: 340, y: 700 },
-  gmail_communities: { x: 340, y: 840 },
-  gmail_authority: { x: 680, y: 700 },
+  danger_gate: { x: COL[1], y: 0 },
+  location_agent: { x: COL[0], y: row(TOP, 0) },
+  twilio_agent: { x: COL[0], y: row(TOP, 1) },
+  intake_agent: { x: COL[1], y: row(TOP, 0) },
+  drafting_agent: { x: COL[1], y: row(TOP, 1) },
+  user_review: { x: COL[1], y: row(TOP, 2) },
+  police_dispatch_agent: { x: COL[0], y: row(BOTTOM, 0) },
+  escalation_timer: { x: COL[0], y: row(BOTTOM, 1) },
+  police_status_agent: { x: COL[0], y: row(BOTTOM, 2) },
+  gmail_news: { x: COL[0], y: row(BOTTOM, 3) },
+  matching_agent: { x: COL[1], y: row(BOTTOM, 0) },
+  gmail_communities: { x: COL[1], y: row(BOTTOM, 1) },
+  gmail_authority: { x: COL[2], y: row(BOTTOM, 0) },
 };
 
-// Tinted lane panels sit behind the nodes. The lane colour only marks the lane; status colours stay on the nodes.
+// Lanes are grouping only: an outline and a label, no colour.
 const LANES = [
-  { id: "lane-emergency", label: "Emergency", sub: "if you are in danger", color: "var(--danger)", x: 0, y: 190, rows: 2 },
-  { id: "lane-report", label: "Report", sub: "your story, your approval", color: "var(--accent)", x: 340, y: 190, rows: 3 },
-  { id: "lane-police", label: "Police", sub: "complaint and escalation", color: "var(--run)", x: 0, y: 700, rows: 4 },
-  { id: "lane-public", label: "Public", sub: "activist groups", color: "var(--warn)", x: 340, y: 700, rows: 2 },
-  { id: "lane-authority", label: "Authority", sub: "post version", color: "var(--ok)", x: 680, y: 700, rows: 1 },
+  { id: "lane-emergency", label: "Emergency", sub: "if she is in danger", x: COL[0], y: TOP, rows: 2 },
+  { id: "lane-report", label: "Report", sub: "her account, her approval", x: COL[1], y: TOP, rows: 3 },
+  { id: "lane-police", label: "Police", sub: "complaint and escalation", x: COL[0], y: BOTTOM, rows: 4 },
+  { id: "lane-public", label: "Public", sub: "activist groups", x: COL[1], y: BOTTOM, rows: 2 },
+  { id: "lane-authority", label: "Authority", sub: "post version", x: COL[2], y: BOTTOM, rows: 1 },
 ];
-const LANE_COLOR: Record<string, string> = Object.fromEntries(LANES.map((l) => [l.id.replace("lane-", ""), l.color]));
-LANE_COLOR.start = "var(--ink-2)";
 
-const TONE: Record<string, { box: string; dot: string; text: string }> = {
-  idle: { box: "border-line bg-surface", dot: "bg-line-strong", text: "text-muted" },
-  running: { box: "border-run bg-run-soft pulse", dot: "bg-run", text: "text-run" },
-  waiting: { box: "border-warn bg-warn-soft", dot: "bg-warn", text: "text-warn" },
-  done: { box: "border-ok/60 bg-ok-soft", dot: "bg-ok", text: "text-ok" },
-  error: { box: "border-danger bg-danger-soft", dot: "bg-danger", text: "text-danger" },
-  skipped: { box: "border-dashed border-line-strong bg-surface opacity-60", dot: "bg-line-strong", text: "text-muted" },
-};
-
-const STATUS_TEXT: Record<string, string> = {
-  idle: "Idle",
-  running: "Running",
-  waiting: "Waiting",
-  done: "Done",
-  error: "Error",
-  skipped: "Skipped",
-};
-
-const STATUS_ICON = { done: CheckCircle2, error: AlertTriangle, running: Loader2, waiting: Clock, skipped: MinusCircle, idle: null } as const;
 const KIND_ICON = { agent: Bot, human: UserRound, timer: Clock, gate: GitFork };
 
-type Data = { label: string; desc: string; lane: string; kind: keyof typeof KIND_ICON; state: NodeState; now: number; tool?: string };
+const BOX: Record<string, string> = {
+  idle: "border-line bg-surface",
+  running: "border-info bg-info-soft",
+  waiting: "border-hold bg-hold-soft",
+  done: "border-line-strong bg-surface",
+  error: "border-danger bg-danger-soft",
+  skipped: "border-dashed border-line bg-paper",
+};
+
+type Data = { label: string; desc: string; kind: keyof typeof KIND_ICON; state: NodeState; now: number; tool?: string };
 
 const FlowNode = memo(function FlowNode({ data }: NodeProps<Node<Data>>) {
-  const { state, label, desc, lane, kind, now, tool } = data;
-  const tone = TONE[state.status];
+  const { state, label, desc, kind, now, tool } = data;
   const Icon = KIND_ICON[kind];
-  const SIcon = STATUS_ICON[state.status];
   const cd = kind === "timer" && state.dueAt && state.status === "waiting" ? fmtCountdown(state.dueAt, now) : null;
   const sub = cd ? cd.text : state.status === "running" && tool ? `${tool}()` : state.message && state.status !== "idle" ? state.message : desc;
+  const mono = !!cd || (state.status === "running" && !!tool);
   return (
     <div
-      className={`relative flex h-full w-full flex-col justify-center overflow-hidden rounded-xl border py-2 pl-5 pr-3 shadow-[var(--shadow)] transition-colors duration-300 ${tone.box}`}
+      className={`flex h-full w-full flex-col justify-center rounded-md border px-3.5 transition-colors duration-200 ${BOX[state.status]} ${
+        state.status === "skipped" ? "opacity-70" : ""
+      }`}
       title={state.message || desc}
     >
-      <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: LANE_COLOR[lane] }} aria-hidden />
-      <Handle type="target" position={Position.Top} className="!h-2 !w-2 !border-0 !bg-line-strong" />
+      <Handle type="target" position={Position.Top} className="!h-1.5 !w-1.5 !border-0 !bg-line-strong" />
       <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-3">
-          <Icon size={16} className="text-ink-2" aria-hidden />
-        </span>
-        <span className="truncate text-[15px] font-semibold leading-tight text-ink">{label}</span>
+        <Icon size={16} strokeWidth={1.75} className="shrink-0 text-ink-2" aria-hidden />
+        <span className="truncate text-small font-semibold leading-tight text-ink">{label}</span>
         {state.fallback && (
-          <span className="ml-auto shrink-0 rounded border border-warn/50 px-1 text-[10px] font-medium text-warn" title="Completed by the deterministic fallback">
+          <span className="chip ml-auto shrink-0 border border-hold text-hold" title="Completed by the deterministic fallback">
             fallback
           </span>
         )}
       </div>
-      <div className="mt-1.5 flex items-center gap-1.5 text-xs">
-        {SIcon ? (
-          <SIcon size={13} className={`shrink-0 ${tone.text} ${state.status === "running" ? "animate-spin" : ""}`} aria-hidden />
-        ) : (
-          <span className={`h-2 w-2 shrink-0 rounded-full ${tone.dot}`} />
-        )}
-        <span className={`shrink-0 font-semibold ${tone.text}`}>{STATUS_TEXT[state.status]}</span>
+      <div className="mt-1">
+        <StatusMark status={state.status} />
       </div>
-      <div className={`mt-0.5 truncate text-[11.5px] text-muted ${cd ? "font-mono" : ""} ${cd?.overdue ? "!text-danger" : ""}`}>{sub}</div>
-      <Handle type="source" position={Position.Bottom} className="!h-2 !w-2 !border-0 !bg-line-strong" />
+      <div className={`mt-0.5 truncate text-caption text-muted ${mono ? "tabular font-mono" : ""} ${cd?.overdue ? "!text-danger-ink" : ""}`}>{sub}</div>
+      <Handle type="source" position={Position.Bottom} className="!h-1.5 !w-1.5 !border-0 !bg-line-strong" />
     </div>
   );
 });
 
-const LaneNode = memo(function LaneNode({ data }: NodeProps<Node<{ label: string; sub: string; color: string }>>) {
+const LaneNode = memo(function LaneNode({ data }: NodeProps<Node<{ label: string; sub: string }>>) {
   return (
-    <div
-      className="h-full w-full rounded-2xl border"
-      style={{ background: `color-mix(in srgb, ${data.color} 6%, transparent)`, borderColor: `color-mix(in srgb, ${data.color} 28%, transparent)` }}
-    >
+    <div className="h-full w-full rounded-lg border border-line">
       <div className="flex items-baseline gap-2 px-4 pt-2.5">
-        <span className="text-[13px] font-bold uppercase tracking-wider" style={{ color: data.color }}>
-          {data.label}
-        </span>
-        <span className="text-[11px] text-muted">{data.sub}</span>
+        <span className="label !text-ink-2">{data.label}</span>
+        <span className="text-caption text-muted">{data.sub}</span>
       </div>
     </div>
   );
@@ -119,22 +101,7 @@ const LaneNode = memo(function LaneNode({ data }: NodeProps<Node<{ label: string
 
 const nodeTypes = { awaaz: FlowNode, lane: LaneNode };
 
-function miniColor(status: string | undefined) {
-  if (status === "done") return "var(--ok)";
-  if (status === "running") return "var(--run)";
-  if (status === "error") return "var(--danger)";
-  return "var(--line-strong)";
-}
-
-export function WorkflowGraph({
-  states,
-  cards,
-  onSelect,
-}: {
-  states: Record<string, NodeState>;
-  cards: AgentCard[];
-  onSelect?: (id: string) => void;
-}) {
+export function WorkflowGraph({ states, cards, onSelect }: { states: Record<string, NodeState>; cards: AgentCard[]; onSelect?: (id: string) => void }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -157,22 +124,24 @@ export function WorkflowGraph({
         id: l.id,
         type: "lane",
         position: { x: l.x - PAD, y: l.y - LANE_HEAD },
-        data: { label: l.label, sub: l.sub, color: l.color },
+        data: { label: l.label, sub: l.sub },
         width: W + PAD * 2,
         height: LANE_HEAD + l.rows * H + (l.rows - 1) * GAP + PAD,
         zIndex: -1,
         draggable: false,
         selectable: false,
+        focusable: false,
       })),
       ...NODES.map((n) => ({
         id: n.id,
         type: "awaaz",
         position: POS[n.id],
-        data: { label: n.label, desc: n.desc, lane: n.lane, kind: n.kind, state: states[n.id], now, tool: lastTool[n.id] },
+        data: { label: n.label, desc: n.desc, kind: n.kind, state: states[n.id], now, tool: lastTool[n.id] },
         // Fixed size: nodes are rebuilt every render, so React Flow must not depend on DOM measurement.
         width: W,
         height: H,
         draggable: false,
+        ariaLabel: `${n.label}: ${STATE_LABEL[states[n.id].status]}`,
       })),
     ],
     [states, now, lastTool],
@@ -185,19 +154,15 @@ export function WorkflowGraph({
         const sb = states[b]?.status;
         const moving = sa === "done" && (sb === "running" || sb === "waiting");
         const travelled = sa === "done" && sb !== "idle" && sb !== "skipped";
-        const color = travelled ? "var(--ok)" : moving ? "var(--run)" : "var(--line-strong)";
+        const color = moving ? "var(--info)" : travelled ? "var(--ink-2)" : "var(--line-strong)";
         return {
           id: `${a}-${b}`,
           source: a,
           target: b,
           type: "smoothstep",
           animated: moving,
-          markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color },
-          style: {
-            stroke: color,
-            strokeWidth: travelled || moving ? 2.5 : 1.5,
-            strokeDasharray: sb === "skipped" ? "4 4" : undefined,
-          },
+          markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color },
+          style: { stroke: color, strokeWidth: travelled || moving ? 2 : 1.25, strokeDasharray: sb === "skipped" ? "4 4" : undefined },
         };
       }),
     [states],
@@ -205,60 +170,34 @@ export function WorkflowGraph({
 
   const total = NODES.filter((n) => states[n.id].status !== "skipped").length;
   const done = NODES.filter((n) => states[n.id].status === "done").length;
-  const running = NODES.filter((n) => states[n.id].status === "running").length;
-  const pct = total ? Math.round((done / total) * 100) : 0;
-  const summary = running
-    ? `${running} agent${running > 1 ? "s" : ""} running now`
-    : done === 0
-      ? "Waiting for activity"
-      : done === total
-        ? "All steps complete"
-        : "Idle between steps";
+  const running = NODES.filter((n) => states[n.id].status === "running");
 
   return (
-    <div className="relative h-full min-h-[460px] w-full" aria-label="Live workflow graph">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.08 }}
-        nodesConnectable={false}
-        onNodeClick={(_, n) => n.type === "awaaz" && onSelect?.(n.id)}
-        proOptions={{ hideAttribution: true }}
-        minZoom={0.2}
-      >
-        <Background gap={22} size={1} color="var(--line)" />
-        <Controls showInteractive={false} position="bottom-right" />
-        <MiniMap
-          pannable
-          zoomable
-          position="top-right"
-          className="!hidden !rounded-lg !border !border-line !bg-surface xl:!block"
-          maskColor="color-mix(in srgb, var(--ink) 8%, transparent)"
-          nodeColor={(n) => (n.type === "lane" ? "transparent" : miniColor(states[n.id]?.status))}
-        />
-      </ReactFlow>
-      <div className="pointer-events-none absolute left-3 top-3 w-60 rounded-xl border border-line bg-surface/95 px-3.5 py-2.5 shadow-[var(--shadow)]">
-        <div className="flex items-baseline justify-between text-xs">
-          <span className="font-semibold text-ink">Workflow progress</span>
-          <span className="font-mono text-muted">
-            {done}/{total}
-          </span>
-        </div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-3" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-          <div className="h-full rounded-full bg-ok transition-all duration-500" style={{ width: `${pct}%` }} />
-        </div>
-        <div className="mt-1.5 text-[11px] text-muted">{summary}</div>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-line px-4 py-2.5 text-small">
+        <span className="tabular font-semibold">
+          {done} of {total} steps done
+        </span>
+        <span className="text-ink-2" aria-live="polite">
+          {running.length ? `Running: ${running.map((n) => n.label).join(", ")}` : done === 0 ? "Waiting for activity" : "Idle between steps"}
+        </span>
+        <span className="ml-auto text-caption text-muted">Select an agent to see its tool calls</span>
       </div>
-      <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-x-3 gap-y-1 rounded-lg border border-line bg-surface/90 px-3 py-2 text-[11px] text-ink-2">
-        {(["running", "waiting", "done", "error", "skipped"] as const).map((s) => (
-          <span key={s} className="inline-flex items-center gap-1.5">
-            <span className={`h-1.5 w-1.5 rounded-full ${TONE[s].dot}`} />
-            {STATUS_TEXT[s]}
-          </span>
-        ))}
-        <span className="text-muted">Click an agent for its tool calls</span>
+      <div className="relative min-h-0 flex-1" aria-label="Live workflow graph">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          fitView
+          fitViewOptions={{ padding: 0.04 }}
+          nodesConnectable={false}
+          onNodeClick={(_, n) => n.type === "awaaz" && onSelect?.(n.id)}
+          proOptions={{ hideAttribution: true }}
+          minZoom={0.2}
+        >
+          <Background gap={24} size={1} color="var(--line)" />
+          <Controls showInteractive={false} position="bottom-right" />
+        </ReactFlow>
       </div>
     </div>
   );

@@ -148,3 +148,24 @@ export const auth = {
     } catch {}
   },
 };
+
+// ---------------- discreet mode ----------------
+// A neutral tab title and icon, for someone whose screen may be seen by others. Remembered on this device.
+const DISCREET_KEY = "awaaz_discreet";
+
+export const discreet = {
+  get(): boolean {
+    try {
+      return localStorage.getItem(DISCREET_KEY) === "1";
+    } catch {
+      return false;
+    }
+  },
+  set(on: boolean) {
+    try {
+      if (on) localStorage.setItem(DISCREET_KEY, "1");
+      else localStorage.removeItem(DISCREET_KEY);
+      window.dispatchEvent(new Event("awaaz-discreet"));
+    } catch {}
+  },
+};
