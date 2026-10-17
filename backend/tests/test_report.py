@@ -167,3 +167,20 @@ async def test_intake_without_llm_uses_fixed_questions():
     assert rec["complainant_name"] == "Sana Malik" and "Imran" in rec["accused"]
     assert "Imran Qureshi" in state["drafts"]["police_text"] and "Sana Malik" in state["drafts"]["police_text"]
     assert state["drafts"]["public_clean"] is False  # no drafting LLM: publication fails closed
+
+
+async def test_demo_org_emails_follow_configured_inboxes(monkeypatch):
+    from app.db import Community, NewsAgency
+    from app.seed import sync_emails
+
+    await seed()
+    monkeypatch.setenv("COMMUNITY_EMAIL_BASE", "saadahmed292000@gmail.com")
+    monkeypatch.setenv("NEWS_EMAIL_BASE", "saribazim6@gmail.com")
+    get_settings.cache_clear()
+    assert await sync_emails() == 10
+    async with SessionLocal() as db:
+        comm = {c.email for c in (await db.scalars(select(Community))).all()}
+        news = {n.email for n in (await db.scalars(select(NewsAgency))).all()}
+    assert all(e.startswith("saadahmed292000+community") and e.endswith("@gmail.com") for e in comm) and len(comm) == 7
+    assert news == {f"saribazim6+news{i}@gmail.com" for i in (1, 2, 3)}
+    assert await sync_emails() == 0

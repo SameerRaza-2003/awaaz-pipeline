@@ -22,6 +22,10 @@ async def _seed_if_empty() -> None:
         count = await s.scalar(select(func.count()).select_from(db.Community))
     if not count:
         await seed()
+    else:
+        from app.seed import sync_emails
+
+        await sync_emails()
 
 
 @asynccontextmanager

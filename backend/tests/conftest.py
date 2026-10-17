@@ -20,6 +20,8 @@ async def fresh_env(tmp_path, monkeypatch):
     monkeypatch.setenv("PRIVACY_LLM_REVIEW", "false")
     monkeypatch.setenv("DEFAULT_DISCORD_WEBHOOK", "")
     monkeypatch.setenv("NEWS_AGENCY_EMAIL", "")  # tests use the seeded agencies
+    monkeypatch.setenv("COMMUNITY_EMAIL_BASE", "")
+    monkeypatch.setenv("NEWS_EMAIL_BASE", "")
     monkeypatch.setenv("DEFAULT_TRUSTED_CONTACT", "")
     # Tests never depend on the developer's local .env provider setup.
     for k, v in {"SMS_PROVIDER": "twilio", "CALL_PROVIDER": "twilio", "MACRODROID_URL": "", "MACRODROID_CALL_URL": "",
