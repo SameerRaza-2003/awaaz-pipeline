@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-label="How the calling and texting agent decides and sends">
+  <defs>
+    <linearGradient id="hdr" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0A2421"/><stop offset="1" stop-color="#17564D"/></linearGradient>
+    <filter id="sh" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#0A2421" flood-opacity="0.12"/></filter>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8A9097"/></marker>
+    <marker id="arT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#17564D"/></marker>
+    <marker id="arC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#C2410C"/></marker>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#15171A" fill-opacity="0.05"/></pattern>
+  </defs>
+  <rect width="1200" height="560" rx="22" fill="#F7F5F0"/>
+  <rect width="1200" height="560" rx="22" fill="url(#grid)"/>
+  <rect width="1200" height="96" rx="22" fill="url(#hdr)"/>
+  <rect y="74" width="1200" height="22" fill="url(#hdr)"/>
+  <g font-family="'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif">
+  <text x="44" y="42" fill="#9FE0D2" font-size="13.5" font-weight="700" letter-spacing="3">AGENT DEEP DIVE</text>
+  <text x="44" y="76" fill="#FFFFFF" font-size="26" font-weight="700">Inside the Calling and Texting Agent</text>
+  <rect x="40" y="122" width="300" height="400" rx="18" fill="#3D4248" fill-opacity="0.06" stroke="#3D4248" stroke-opacity="0.35" stroke-width="1.5"/>
+  <text x="58" y="150" fill="#3D4248" font-size="12.5" font-weight="800" letter-spacing="2">INPUTS DECIDED BY CODE</text>
+  <text x="58" y="168" fill="#6B7078" font-size="12">The model never chooses who is contacted</text>
+  <g filter="url(#sh)"><rect x="58" y="190" width="264" height="70" rx="12" fill="#FFFFFF" stroke="#C2410C" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="58" y="200" width="5" height="50" rx="2.5" fill="#C2410C"/>
+  <rect x="267.6" y="200" width="44.4" height="20" rx="10" fill="#C2410C" fill-opacity="0.12"/>
+  <text x="289.8" y="214" fill="#C2410C" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">CODE</text>
+  <text x="76" y="220" fill="#15171A" font-size="15.5" font-weight="700">Verified location</text>
+  <text x="76" y="240" fill="#6B7078" font-size="12.5">Address, map link, accuracy</text>
+  <g filter="url(#sh)"><rect x="58" y="278" width="264" height="70" rx="12" fill="#FFFFFF" stroke="#17564D" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="58" y="288" width="5" height="50" rx="2.5" fill="#17564D"/>
+  <rect x="267.6" y="288" width="44.4" height="20" rx="10" fill="#17564D" fill-opacity="0.12"/>
+  <text x="289.8" y="302" fill="#17564D" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">CODE</text>
+  <text x="76" y="308" fill="#15171A" font-size="15.5" font-weight="700">Trusted contact</text>
+  <text x="76" y="328" fill="#6B7078" font-size="12.5">Phone and Discord from profile</text>
+  <g filter="url(#sh)"><rect x="58" y="366" width="264" height="70" rx="12" fill="#FFFFFF" stroke="#3D4248" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="58" y="376" width="5" height="50" rx="2.5" fill="#3D4248"/>
+  <rect x="267.6" y="376" width="44.4" height="20" rx="10" fill="#3D4248" fill-opacity="0.12"/>
+  <text x="289.8" y="390" fill="#3D4248" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">CODE</text>
+  <text x="76" y="396" fill="#15171A" font-size="15.5" font-weight="700">Dispatch key</text>
+  <text x="76" y="416" fill="#6B7078" font-size="12.5">One alert per emergency</text>
+  <text x="58" y="470" fill="#6B7078" font-size="12.5">The address from the agent is checked against</text>
+  <text x="58" y="488" fill="#6B7078" font-size="12.5">the geocoder result before it is used.</text>
+  <g filter="url(#sh)"><rect x="380" y="122" width="440" height="400" rx="18" fill="#FFFFFF" stroke="#C2410C" stroke-width="2"/></g>
+  <rect x="380" y="122" width="440" height="56" rx="18" fill="#C2410C"/>
+  <rect x="380" y="160" width="440" height="18" fill="#C2410C"/>
+  <text x="404" y="157" fill="#FFFFFF" font-size="18" font-weight="700">Calling and Texting Agent</text>
+  <text x="796" y="157" fill="#FFE4D6" font-size="12" font-weight="700" text-anchor="end">25 s budget</text>
+  <circle cx="414" cy="206" r="15" fill="#C2410C" fill-opacity="0.12"/>
+  <text x="414" y="211" fill="#C2410C" font-size="14" font-weight="800" text-anchor="middle">1</text>
+  <text x="442" y="206" fill="#15171A" font-size="15" font-weight="700">Write the SMS</text>
+  <text x="442" y="225" fill="#6B7078" font-size="12.5">Short, calm, with the street address and map link</text>
+  <circle cx="414" cy="266" r="15" fill="#C2410C" fill-opacity="0.12"/>
+  <text x="414" y="271" fill="#C2410C" font-size="14" font-weight="800" text-anchor="middle">2</text>
+  <text x="442" y="266" fill="#15171A" font-size="15" font-weight="700">Write the call script</text>
+  <text x="442" y="285" fill="#6B7078" font-size="12.5">Read aloud twice, slowly, so it is understood</text>
+  <circle cx="414" cy="326" r="15" fill="#C2410C" fill-opacity="0.12"/>
+  <text x="414" y="331" fill="#C2410C" font-size="14" font-weight="800" text-anchor="middle">3</text>
+  <text x="442" y="326" fill="#15171A" font-size="15" font-weight="700">Send through every channel</text>
+  <text x="442" y="345" fill="#6B7078" font-size="12.5">SMS, voice call and Discord, one recipient each</text>
+  <circle cx="414" cy="386" r="15" fill="#C2410C" fill-opacity="0.12"/>
+  <text x="414" y="391" fill="#C2410C" font-size="14" font-weight="800" text-anchor="middle">4</text>
+  <text x="442" y="386" fill="#15171A" font-size="15" font-weight="700">Confirm delivery</text>
+  <text x="442" y="405" fill="#6B7078" font-size="12.5">Check provider status, report what was sent</text>
+  <text x="400" y="446" fill="#6B7078" font-size="11" font-weight="800" letter-spacing="2">TOOLS</text>
+  <rect x="400" y="456" width="74.4" height="26" rx="7" fill="#F7F5F0" stroke="#D9D3C8"/>
+  <text x="437.2" y="473" fill="#3D4248" font-size="11.5" font-family="'Cascadia Code', 'SFMono-Regular', Consolas, monospace" text-anchor="middle">send_sms</text>
+  <rect x="480.4" y="456" width="89.0" height="26" rx="7" fill="#F7F5F0" stroke="#D9D3C8"/>
+  <text x="524.9" y="473" fill="#3D4248" font-size="11.5" font-family="'Cascadia Code', 'SFMono-Regular', Consolas, monospace" text-anchor="middle">place_call</text>
+  <rect x="575.4" y="456" width="147.4" height="26" rx="7" fill="#F7F5F0" stroke="#D9D3C8"/>
+  <text x="649.1" y="473" fill="#3D4248" font-size="11.5" font-family="'Cascadia Code', 'SFMono-Regular', Consolas, monospace" text-anchor="middle">send_discord_alert</text>
+  <rect x="400" y="488" width="154.7" height="26" rx="7" fill="#F7F5F0" stroke="#D9D3C8"/>
+  <text x="477.35" y="505" fill="#3D4248" font-size="11.5" font-family="'Cascadia Code', 'SFMono-Regular', Consolas, monospace" text-anchor="middle">get_delivery_status</text>
+  <g filter="url(#sh)"><rect x="860" y="122" width="300" height="108" rx="12" fill="#FFFFFF" stroke="#3D4248" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="860" y="132" width="5" height="88" rx="2.5" fill="#3D4248"/>
+  <rect x="1105.6" y="132" width="44.4" height="20" rx="10" fill="#3D4248" fill-opacity="0.12"/>
+  <text x="1127.8" y="146" fill="#3D4248" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">CODE</text>
+  <text x="878" y="152" fill="#15171A" font-size="15.5" font-weight="700">Outbound Guard</text>
+  <text x="878" y="172" fill="#6B7078" font-size="12.5">Checks mode and allowlist,</text>
+  <text x="878" y="189" fill="#6B7078" font-size="12.5">claims the idempotency key,</text>
+  <text x="878" y="206" fill="#6B7078" font-size="12.5">retries transient failures</text>
+  <text x="860" y="262" fill="#C2410C" font-size="12.5" font-weight="800" letter-spacing="2">PROVIDERS</text>
+  <g filter="url(#sh)"><rect x="860" y="276" width="300" height="54" rx="12" fill="#FFFFFF" stroke="#C2410C" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="860" y="286" width="5" height="34" rx="2.5" fill="#C2410C"/>
+  <rect x="1113.2" y="286" width="36.8" height="20" rx="10" fill="#C2410C" fill-opacity="0.12"/>
+  <text x="1131.6" y="300" fill="#C2410C" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">EXT</text>
+  <text x="878" y="306" fill="#15171A" font-size="15.5" font-weight="700">Twilio</text>
+  <text x="878" y="326" fill="#6B7078" font-size="12.5">Programmable SMS and voice</text>
+  <g filter="url(#sh)"><rect x="860" y="340" width="300" height="54" rx="12" fill="#FFFFFF" stroke="#C2410C" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="860" y="350" width="5" height="34" rx="2.5" fill="#C2410C"/>
+  <rect x="1113.2" y="350" width="36.8" height="20" rx="10" fill="#C2410C" fill-opacity="0.12"/>
+  <text x="1131.6" y="364" fill="#C2410C" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">EXT</text>
+  <text x="878" y="370" fill="#15171A" font-size="15.5" font-weight="700">MacroDroid</text>
+  <text x="878" y="390" fill="#6B7078" font-size="12.5">A spare Android phone and SIM</text>
+  <g filter="url(#sh)"><rect x="860" y="404" width="300" height="54" rx="12" fill="#FFFFFF" stroke="#C2410C" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="860" y="414" width="5" height="34" rx="2.5" fill="#C2410C"/>
+  <rect x="1113.2" y="414" width="36.8" height="20" rx="10" fill="#C2410C" fill-opacity="0.12"/>
+  <text x="1131.6" y="428" fill="#C2410C" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">EXT</text>
+  <text x="878" y="434" fill="#15171A" font-size="15.5" font-weight="700">Discord webhook</text>
+  <text x="878" y="454" fill="#6B7078" font-size="12.5">Free, instant, worldwide</text>
+  <text x="860" y="482" fill="#6B7078" font-size="12.5">If the agent fails or times out, a fixed</text>
+  <text x="860" y="500" fill="#6B7078" font-size="12.5">template sends the same alert through</text>
+  <text x="860" y="518" fill="#6B7078" font-size="12.5">the very same tools and guard.</text>
+  <path d="M340 322 H376" fill="none" stroke="#8A9097" stroke-width="1.8" marker-end="url(#ar)" stroke-linejoin="round"/>
+  <path d="M820 176 H856" fill="none" stroke="#8A9097" stroke-width="1.8" marker-end="url(#ar)" stroke-linejoin="round"/>
+  <path d="M1010 232 V272" fill="none" stroke="#8A9097" stroke-width="1.8" marker-end="url(#ar)" stroke-linejoin="round"/>
+  </g>
+</svg>

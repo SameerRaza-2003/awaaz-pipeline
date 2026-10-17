@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-label="Architecture diagram of Awaaz">
+  <defs>
+    <linearGradient id="hdr" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0A2421"/><stop offset="1" stop-color="#17564D"/></linearGradient>
+    <filter id="sh" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#0A2421" flood-opacity="0.12"/></filter>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8A9097"/></marker>
+    <marker id="arT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#17564D"/></marker>
+    <marker id="arC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#C2410C"/></marker>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#15171A" fill-opacity="0.05"/></pattern>
+  </defs>
+  <rect width="1200" height="760" rx="22" fill="#F7F5F0"/>
+  <rect width="1200" height="760" rx="22" fill="url(#grid)"/>
+  <rect width="1200" height="96" rx="22" fill="url(#hdr)"/>
+  <rect y="74" width="1200" height="22" fill="url(#hdr)"/>
+  <g font-family="'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif">
+  <text x="44" y="42" fill="#9FE0D2" font-size="13.5" font-weight="700" letter-spacing="3">UNDER THE HOOD</text>
+  <text x="44" y="76" fill="#FFFFFF" font-size="26" font-weight="700">System architecture</text>
+  <rect x="40" y="122" width="1120" height="112" rx="18" fill="#3D4248" fill-opacity="0.06" stroke="#3D4248" stroke-opacity="0.35" stroke-width="1.5"/>
+  <text x="58" y="150" fill="#3D4248" font-size="12.5" font-weight="800" letter-spacing="2">CLIENTS</text>
+  <g filter="url(#sh)"><rect x="60" y="160" width="340" height="60" rx="12" fill="#FFFFFF" stroke="#17564D" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="60" y="170" width="5" height="40" rx="2.5" fill="#17564D"/>
+  <rect x="360.8" y="170" width="29.2" height="20" rx="10" fill="#17564D" fill-opacity="0.12"/>
+  <text x="375.4" y="184" fill="#17564D" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">UI</text>
+  <text x="78" y="190" fill="#15171A" font-size="15.5" font-weight="700">Survivor web app</text>
+  <text x="78" y="210" fill="#6B7078" font-size="12.5">Chat, emergency, receipt, account</text>
+  <g filter="url(#sh)"><rect x="430" y="160" width="340" height="60" rx="12" fill="#FFFFFF" stroke="#2754B8" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="430" y="170" width="5" height="40" rx="2.5" fill="#2754B8"/>
+  <rect x="730.8" y="170" width="29.2" height="20" rx="10" fill="#2754B8" fill-opacity="0.12"/>
+  <text x="745.4" y="184" fill="#2754B8" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">UI</text>
+  <text x="448" y="190" fill="#15171A" font-size="15.5" font-weight="700">Authorities dashboard</text>
+  <text x="448" y="210" fill="#6B7078" font-size="12.5">Complaints, status, countdown</text>
+  <g filter="url(#sh)"><rect x="800" y="160" width="340" height="60" rx="12" fill="#FFFFFF" stroke="#6D28D9" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="800" y="170" width="5" height="40" rx="2.5" fill="#6D28D9"/>
+  <rect x="1100.8" y="170" width="29.2" height="20" rx="10" fill="#6D28D9" fill-opacity="0.12"/>
+  <text x="1115.4" y="184" fill="#6D28D9" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">UI</text>
+  <text x="818" y="190" fill="#15171A" font-size="15.5" font-weight="700">Live system view</text>
+  <text x="818" y="210" fill="#6B7078" font-size="12.5">Workflow graph, agent console, events</text>
+  <path d="M600 236 V262" fill="none" stroke="#8A9097" stroke-width="1.8" marker-end="url(#ar)" stroke-linejoin="round"/>
+  <g filter="url(#sh)"><rect x="40" y="266" width="1120" height="56" rx="12" fill="#FFFFFF" stroke="#3D4248" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="40" y="276" width="5" height="36" rx="2.5" fill="#3D4248"/>
+  <rect x="1120.8" y="276" width="29.2" height="20" rx="10" fill="#3D4248" fill-opacity="0.12"/>
+  <text x="1135.4" y="290" fill="#3D4248" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">UI</text>
+  <text x="58" y="300.0" fill="#15171A" font-size="15.5" font-weight="700">Next.js 16 frontend  ·  React 19  ·  React Flow  ·  REST and Server Sent Events proxy</text>
+  <path d="M600 324 V350" fill="none" stroke="#8A9097" stroke-width="1.8" marker-end="url(#ar)" stroke-linejoin="round"/>
+  <rect x="40" y="354" width="1120" height="234" rx="18" fill="#17564D" fill-opacity="0.06" stroke="#17564D" stroke-opacity="0.35" stroke-width="1.5"/>
+  <text x="58" y="382" fill="#17564D" font-size="12.5" font-weight="800" letter-spacing="2">FASTAPI BACKEND</text>
+  <g filter="url(#sh)"><rect x="60" y="394" width="250" height="76" rx="12" fill="#FFFFFF" stroke="#17564D" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="60" y="404" width="5" height="56" rx="2.5" fill="#17564D"/>
+  <rect x="255.60000000000002" y="404" width="44.4" height="20" rx="10" fill="#17564D" fill-opacity="0.12"/>
+  <text x="277.8" y="418" fill="#17564D" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">CODE</text>
+  <text x="78" y="424" fill="#15171A" font-size="15.5" font-weight="700">Workflows</text>
+  <text x="78" y="444" fill="#6B7078" font-size="12.5">Emergency · Report</text>
+  <text x="78" y="461" fill="#6B7078" font-size="12.5">Escalation (fixed order)</text>
+  <g filter="url(#sh)"><rect x="330" y="394" width="250" height="76" rx="12" fill="#FFFFFF" stroke="#17564D" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="330" y="404" width="5" height="56" rx="2.5" fill="#17564D"/>
+  <rect x="540.8" y="404" width="29.2" height="20" rx="10" fill="#17564D" fill-opacity="0.12"/>
+  <text x="555.4" y="418" fill="#17564D" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">AI</text>
+  <text x="348" y="424" fill="#15171A" font-size="15.5" font-weight="700">Agent Runner</text>
+  <text x="348" y="444" fill="#6B7078" font-size="12.5">8 tool using agents</text>
+  <text x="348" y="461" fill="#6B7078" font-size="12.5">timeouts, retries, fallbacks</text>
+  <g filter="url(#sh)"><rect x="600" y="394" width="250" height="76" rx="12" fill="#FFFFFF" stroke="#C2410C" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="600" y="404" width="5" height="56" rx="2.5" fill="#C2410C"/>
+  <rect x="795.6" y="404" width="44.4" height="20" rx="10" fill="#C2410C" fill-opacity="0.12"/>
+  <text x="817.8" y="418" fill="#C2410C" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">CODE</text>
+  <text x="618" y="424" fill="#15171A" font-size="15.5" font-weight="700">Outbound Guard</text>
+  <text x="618" y="444" fill="#6B7078" font-size="12.5">dry run · sandbox · live</text>
+  <text x="618" y="461" fill="#6B7078" font-size="12.5">allowlist, idempotency</text>
+  <g filter="url(#sh)"><rect x="870" y="394" width="270" height="76" rx="12" fill="#FFFFFF" stroke="#6D28D9" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="870" y="404" width="5" height="56" rx="2.5" fill="#6D28D9"/>
+  <rect x="1085.6" y="404" width="44.4" height="20" rx="10" fill="#6D28D9" fill-opacity="0.12"/>
+  <text x="1107.8" y="418" fill="#6D28D9" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">CODE</text>
+  <text x="888" y="424" fill="#15171A" font-size="15.5" font-weight="700">Event bus</text>
+  <text x="888" y="444" fill="#6B7078" font-size="12.5">Every step, tool call and send</text>
+  <text x="888" y="461" fill="#6B7078" font-size="12.5">streamed live, replayable</text>
+  <g filter="url(#sh)"><rect x="60" y="492" width="250" height="76" rx="12" fill="#FFFFFF" stroke="#2754B8" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="60" y="502" width="5" height="56" rx="2.5" fill="#2754B8"/>
+  <rect x="255.60000000000002" y="502" width="44.4" height="20" rx="10" fill="#2754B8" fill-opacity="0.12"/>
+  <text x="277.8" y="516" fill="#2754B8" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">CODE</text>
+  <text x="78" y="522" fill="#15171A" font-size="15.5" font-weight="700">Authorities service</text>
+  <text x="78" y="542" fill="#6B7078" font-size="12.5">Separate router and DB</text>
+  <text x="78" y="559" fill="#6B7078" font-size="12.5">service key, own login</text>
+  <g filter="url(#sh)"><rect x="330" y="492" width="250" height="76" rx="12" fill="#FFFFFF" stroke="#B7791F" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="330" y="502" width="5" height="56" rx="2.5" fill="#B7791F"/>
+  <rect x="525.6" y="502" width="44.4" height="20" rx="10" fill="#B7791F" fill-opacity="0.12"/>
+  <text x="547.8" y="516" fill="#B7791F" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">CODE</text>
+  <text x="348" y="522" fill="#15171A" font-size="15.5" font-weight="700">Privacy layer</text>
+  <text x="348" y="542" fill="#6B7078" font-size="12.5">PII scanner plus</text>
+  <text x="348" y="559" fill="#6B7078" font-size="12.5">independent model review</text>
+  <g filter="url(#sh)"><rect x="600" y="492" width="250" height="76" rx="12" fill="#FFFFFF" stroke="#24704A" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="600" y="502" width="5" height="56" rx="2.5" fill="#24704A"/>
+  <rect x="803.2" y="502" width="36.8" height="20" rx="10" fill="#24704A" fill-opacity="0.12"/>
+  <text x="821.6" y="516" fill="#24704A" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">24H</text>
+  <text x="618" y="522" fill="#15171A" font-size="15.5" font-weight="700">Scheduler</text>
+  <text x="618" y="542" fill="#6B7078" font-size="12.5">Database backed deadlines</text>
+  <text x="618" y="559" fill="#6B7078" font-size="12.5">survives restarts</text>
+  <g filter="url(#sh)"><rect x="870" y="492" width="270" height="76" rx="12" fill="#FFFFFF" stroke="#3D4248" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="870" y="502" width="5" height="56" rx="2.5" fill="#3D4248"/>
+  <rect x="1085.6" y="502" width="44.4" height="20" rx="10" fill="#3D4248" fill-opacity="0.12"/>
+  <text x="1107.8" y="516" fill="#3D4248" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">CODE</text>
+  <text x="888" y="522" fill="#15171A" font-size="15.5" font-weight="700">Encryption</text>
+  <text x="888" y="542" fill="#6B7078" font-size="12.5">Fernet at rest for names,</text>
+  <text x="888" y="559" fill="#6B7078" font-size="12.5">accounts, contacts, webhooks</text>
+  <path d="M330 590 V616" fill="none" stroke="#8A9097" stroke-width="1.8" marker-end="url(#ar)" stroke-linejoin="round"/>
+  <path d="M870 590 V616" fill="none" stroke="#8A9097" stroke-width="1.8" marker-end="url(#ar)" stroke-linejoin="round"/>
+  <rect x="40" y="620" width="520" height="120" rx="18" fill="#3D4248" fill-opacity="0.06" stroke="#3D4248" stroke-opacity="0.35" stroke-width="1.5"/>
+  <text x="58" y="648" fill="#3D4248" font-size="12.5" font-weight="800" letter-spacing="2">DATA</text>
+  <g filter="url(#sh)"><rect x="58" y="656" width="236" height="66" rx="12" fill="#FFFFFF" stroke="#17564D" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="58" y="666" width="5" height="46" rx="2.5" fill="#17564D"/>
+  <rect x="254.8" y="666" width="29.2" height="20" rx="10" fill="#17564D" fill-opacity="0.12"/>
+  <text x="269.4" y="680" fill="#17564D" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">DB</text>
+  <text x="76" y="686" fill="#15171A" font-size="15.5" font-weight="700">awaaz.db</text>
+  <text x="76" y="706" fill="#6B7078" font-size="12.5">Sessions, reports, dispatch log</text>
+  <g filter="url(#sh)"><rect x="306" y="656" width="236" height="66" rx="12" fill="#FFFFFF" stroke="#2754B8" stroke-opacity="0.55" stroke-width="1.5"/></g>
+  <rect x="306" y="666" width="5" height="46" rx="2.5" fill="#2754B8"/>
+  <rect x="502.79999999999995" y="666" width="29.2" height="20" rx="10" fill="#2754B8" fill-opacity="0.12"/>
+  <text x="517.4" y="680" fill="#2754B8" font-size="10.5" font-weight="800" text-anchor="middle" letter-spacing="0.8">DB</text>
+  <text x="324" y="686" fill="#15171A" font-size="15.5" font-weight="700">police.db</text>
+  <text x="324" y="706" fill="#6B7078" font-size="12.5">Encrypted complaints</text>
+  <rect x="590" y="620" width="570" height="120" rx="18" fill="#3D4248" fill-opacity="0.06" stroke="#3D4248" stroke-opacity="0.35" stroke-width="1.5"/>
+  <text x="608" y="648" fill="#3D4248" font-size="12.5" font-weight="800" letter-spacing="2">EXTERNAL SERVICES</text>
+  <g filter="url(#sh)"><rect x="606" y="656" width="102" height="66" rx="12" fill="#FFFFFF" stroke="#D9D3C8"/></g>
+  <text x="657.0" y="682" fill="#15171A" font-size="12.5" font-weight="700" text-anchor="middle">OpenRouter</text>
+  <text x="657.0" y="705" fill="#6B7078" font-size="11.5" text-anchor="middle">LLMs, embeddings</text>
+  <g filter="url(#sh)"><rect x="716" y="656" width="102" height="66" rx="12" fill="#FFFFFF" stroke="#D9D3C8"/></g>
+  <text x="767.0" y="682" fill="#15171A" font-size="12.5" font-weight="700" text-anchor="middle">Gmail SMTP</text>
+  <text x="767.0" y="705" fill="#6B7078" font-size="11.5" text-anchor="middle">Email</text>
+  <g filter="url(#sh)"><rect x="826" y="656" width="102" height="66" rx="12" fill="#FFFFFF" stroke="#D9D3C8"/></g>
+  <text x="877.0" y="676" fill="#15171A" font-size="12.5" font-weight="700" text-anchor="middle">Twilio or</text>
+  <text x="877.0" y="691" fill="#15171A" font-size="12.5" font-weight="700" text-anchor="middle">MacroDroid</text>
+  <text x="877.0" y="714" fill="#6B7078" font-size="11.5" text-anchor="middle">Calls, SMS</text>
+  <g filter="url(#sh)"><rect x="936" y="656" width="102" height="66" rx="12" fill="#FFFFFF" stroke="#D9D3C8"/></g>
+  <text x="987.0" y="682" fill="#15171A" font-size="12.5" font-weight="700" text-anchor="middle">Discord</text>
+  <text x="987.0" y="705" fill="#6B7078" font-size="11.5" text-anchor="middle">Alerts</text>
+  <g filter="url(#sh)"><rect x="1046" y="656" width="102" height="66" rx="12" fill="#FFFFFF" stroke="#D9D3C8"/></g>
+  <text x="1097.0" y="682" fill="#15171A" font-size="12.5" font-weight="700" text-anchor="middle">OpenStreetMap</text>
+  <text x="1097.0" y="705" fill="#6B7078" font-size="11.5" text-anchor="middle">Addresses</text>
+  </g>
+</svg>

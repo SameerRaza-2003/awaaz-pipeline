@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-label="Global deployment model of Awaaz">
+  <defs>
+    <linearGradient id="hdr" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0A2421"/><stop offset="1" stop-color="#17564D"/></linearGradient>
+    <filter id="sh" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#0A2421" flood-opacity="0.12"/></filter>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8A9097"/></marker>
+    <marker id="arT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#17564D"/></marker>
+    <marker id="arC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#C2410C"/></marker>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#15171A" fill-opacity="0.05"/></pattern>
+  </defs>
+  <rect width="1200" height="600" rx="22" fill="#F7F5F0"/>
+  <rect width="1200" height="600" rx="22" fill="url(#grid)"/>
+  <rect width="1200" height="96" rx="22" fill="url(#hdr)"/>
+  <rect y="74" width="1200" height="22" fill="url(#hdr)"/>
+  <g font-family="'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif">
+  <text x="44" y="42" fill="#9FE0D2" font-size="13.5" font-weight="700" letter-spacing="3">GLOBAL SCOPE</text>
+  <text x="44" y="76" fill="#FFFFFF" font-size="26" font-weight="700">One core, deployable in any country</text>
+  <rect x="40" y="122" width="540" height="380" rx="18" fill="#17564D" fill-opacity="0.06" stroke="#17564D" stroke-opacity="0.35" stroke-width="1.5"/>
+  <text x="58" y="150" fill="#17564D" font-size="12.5" font-weight="800" letter-spacing="2">AWAAZ CORE</text>
+  <text x="58" y="168" fill="#6B7078" font-size="12">Identical in every deployment</text>
+  <rect x="62" y="178" width="26" height="26" rx="8" fill="#17564D" fill-opacity="0.12"/>
+  <path d="M68.5 191 l4 4 l7.5 -8" fill="none" stroke="#17564D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="102" y="195" fill="#15171A" font-size="15" font-weight="700">Eight AI agents</text>
+  <text x="102" y="213" fill="#6B7078" font-size="12.5">Interview, drafting, matching, alerts, dispatch, status, email</text>
+  <rect x="62" y="228" width="26" height="26" rx="8" fill="#17564D" fill-opacity="0.12"/>
+  <path d="M68.5 241 l4 4 l7.5 -8" fill="none" stroke="#17564D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="102" y="245" fill="#15171A" font-size="15" font-weight="700">Privacy engine</text>
+  <text x="102" y="263" fill="#6B7078" font-size="12.5">Scanner plus independent review, fails closed</text>
+  <rect x="62" y="278" width="26" height="26" rx="8" fill="#17564D" fill-opacity="0.12"/>
+  <path d="M68.5 291 l4 4 l7.5 -8" fill="none" stroke="#17564D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="102" y="295" fill="#15171A" font-size="15" font-weight="700">Outbound Guard</text>
+  <text x="102" y="313" fill="#6B7078" font-size="12.5">Dry run, sandbox and live modes, no double sends</text>
+  <rect x="62" y="328" width="26" height="26" rx="8" fill="#17564D" fill-opacity="0.12"/>
+  <path d="M68.5 341 l4 4 l7.5 -8" fill="none" stroke="#17564D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="102" y="345" fill="#15171A" font-size="15" font-weight="700">Escalation engine</text>
+  <text x="102" y="363" fill="#6B7078" font-size="12.5">Database backed deadlines that survive restarts</text>
+  <rect x="62" y="378" width="26" height="26" rx="8" fill="#17564D" fill-opacity="0.12"/>
+  <path d="M68.5 391 l4 4 l7.5 -8" fill="none" stroke="#17564D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="102" y="395" fill="#15171A" font-size="15" font-weight="700">Encryption at rest</text>
+  <text x="102" y="413" fill="#6B7078" font-size="12.5">Names, accounts, contacts and webhooks</text>
+  <rect x="62" y="428" width="26" height="26" rx="8" fill="#17564D" fill-opacity="0.12"/>
+  <path d="M68.5 441 l4 4 l7.5 -8" fill="none" stroke="#17564D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="102" y="445" fill="#15171A" font-size="15" font-weight="700">Live transparency</text>
+  <text x="102" y="463" fill="#6B7078" font-size="12.5">Workflow graph, agent console and event log</text>
+  <path d="M582 312 H616" fill="none" stroke="#8A9097" stroke-width="2.2" marker-end="url(#ar)" stroke-linejoin="round"/>
+  <rect x="620" y="122" width="540" height="380" rx="18" fill="#B7791F" fill-opacity="0.06" stroke="#B7791F" stroke-opacity="0.35" stroke-width="1.5"/>
+  <text x="638" y="150" fill="#B7791F" font-size="12.5" font-weight="800" letter-spacing="2">COUNTRY PACK</text>
+  <text x="638" y="168" fill="#6B7078" font-size="12">What each deployment localises</text>
+  <rect x="642" y="178" width="26" height="26" rx="8" fill="#B7791F" fill-opacity="0.14"/>
+  <circle cx="655" cy="191" r="4.5" fill="#B7791F"/>
+  <text x="682" y="195" fill="#15171A" font-size="15" font-weight="700">Emergency and helpline numbers</text>
+  <text x="682" y="213" fill="#6B7078" font-size="12.5">Shown on every screen</text>
+  <rect x="642" y="228" width="26" height="26" rx="8" fill="#B7791F" fill-opacity="0.14"/>
+  <circle cx="655" cy="241" r="4.5" fill="#B7791F"/>
+  <text x="682" y="245" fill="#15171A" font-size="15" font-weight="700">Authorities adapter</text>
+  <text x="682" y="263" fill="#6B7078" font-size="12.5">Police, ombudsperson or regulator API</text>
+  <rect x="642" y="278" width="26" height="26" rx="8" fill="#B7791F" fill-opacity="0.14"/>
+  <circle cx="655" cy="291" r="4.5" fill="#B7791F"/>
+  <text x="682" y="295" fill="#15171A" font-size="15" font-weight="700">Communities and news organisations</text>
+  <text x="682" y="313" fill="#6B7078" font-size="12.5">Tagged by country or GLOBAL</text>
+  <rect x="642" y="328" width="26" height="26" rx="8" fill="#B7791F" fill-opacity="0.14"/>
+  <circle cx="655" cy="341" r="4.5" fill="#B7791F"/>
+  <text x="682" y="345" fill="#15171A" font-size="15" font-weight="700">Legal deadline</text>
+  <text x="682" y="363" fill="#6B7078" font-size="12.5">Escalation delay and addressed statuses</text>
+  <rect x="642" y="378" width="26" height="26" rx="8" fill="#B7791F" fill-opacity="0.14"/>
+  <circle cx="655" cy="391" r="4.5" fill="#B7791F"/>
+  <text x="682" y="395" fill="#15171A" font-size="15" font-weight="700">Language and region</text>
+  <text x="682" y="413" fill="#6B7078" font-size="12.5">Default country, phone format, geocoder</text>
+  <rect x="642" y="428" width="26" height="26" rx="8" fill="#B7791F" fill-opacity="0.14"/>
+  <circle cx="655" cy="441" r="4.5" fill="#B7791F"/>
+  <text x="682" y="445" fill="#15171A" font-size="15" font-weight="700">Channels</text>
+  <text x="682" y="463" fill="#6B7078" font-size="12.5">Twilio, local SIM via MacroDroid, Discord, email</text>
+  <text x="44" y="538" fill="#3D4248" font-size="12" font-weight="800" letter-spacing="2">ALIGNED WITH</text>
+  <rect x="44" y="550" width="345.6" height="32" rx="16" fill="#FFFFFF" stroke="#D9D3C8"/>
+  <text x="58" y="571" fill="#17564D" font-size="13" font-weight="800">SDG 5.2</text>
+  <text x="123.39999999999999" y="571" fill="#3D4248" font-size="13">End violence against women and girls</text>
+  <rect x="401.6" y="550" width="259.20000000000005" height="32" rx="16" fill="#FFFFFF" stroke="#D9D3C8"/>
+  <text x="415.6" y="571" fill="#17564D" font-size="13" font-weight="800">SDG 16.3</text>
+  <text x="489.20000000000005" y="571" fill="#3D4248" font-size="13">Equal access to justice</text>
+  <rect x="672.8000000000001" y="550" width="381.6" height="32" rx="16" fill="#FFFFFF" stroke="#D9D3C8"/>
+  <text x="686.8000000000001" y="571" fill="#17564D" font-size="13" font-weight="800">ILO C190</text>
+  <text x="760.4000000000001" y="571" fill="#3D4248" font-size="13">Violence and Harassment Convention, 2019</text>
+  </g>
+</svg>

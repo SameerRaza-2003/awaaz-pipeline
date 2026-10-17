@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="380" viewBox="0 0 1200 380" role="img" aria-label="Awaaz: every voice heard, every complaint answered">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A2421"/>
+      <stop offset="0.55" stop-color="#103E38"/>
+      <stop offset="1" stop-color="#17564D"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.79" cy="0.5" r="0.55">
+      <stop offset="0" stop-color="#6CBCAD" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#6CBCAD" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9FE0D2"/>
+      <stop offset="1" stop-color="#4FA393"/>
+    </linearGradient>
+    <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.1" fill="#FFFFFF" fill-opacity="0.06"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="380" rx="22" fill="url(#bg)"/>
+  <rect width="1200" height="380" rx="22" fill="url(#dots)"/>
+  <rect width="1200" height="380" rx="22" fill="url(#glow)"/>
+
+  <!-- voice waveform -->
+  <g transform="translate(945 190)">
+    <circle r="150" fill="none" stroke="#6CBCAD" stroke-opacity="0.10" stroke-width="2"/>
+    <circle r="118" fill="none" stroke="#6CBCAD" stroke-opacity="0.16" stroke-width="2"/>
+    <circle r="86" fill="none" stroke="#6CBCAD" stroke-opacity="0.24" stroke-width="2"/>
+    <g fill="url(#bar)">
+      <rect x="-96" y="-14" width="12" height="28" rx="6"/>
+      <rect x="-76" y="-30" width="12" height="60" rx="6"/>
+      <rect x="-56" y="-52" width="12" height="104" rx="6"/>
+      <rect x="-36" y="-36" width="12" height="72" rx="6"/>
+      <rect x="-16" y="-70" width="12" height="140" rx="6"/>
+      <rect x="4" y="-46" width="12" height="92" rx="6"/>
+      <rect x="24" y="-60" width="12" height="120" rx="6"/>
+      <rect x="44" y="-28" width="12" height="56" rx="6"/>
+      <rect x="64" y="-42" width="12" height="84" rx="6"/>
+      <rect x="84" y="-18" width="12" height="36" rx="6"/>
+    </g>
+  </g>
+
+  <g font-family="'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif">
+    <text x="64" y="74" fill="#9FE0D2" font-size="15" font-weight="600" letter-spacing="3.5">SURVIVOR FIRST  ·  MULTI AGENT  ·  GLOBAL</text>
+    <text x="62" y="160" fill="#FFFFFF" font-size="92" font-weight="700" letter-spacing="-2">Awaaz</text>
+    <text x="352" y="158" fill="#9FE0D2" font-size="54" font-weight="400" font-family="'Noto Nastaliq Urdu', 'Segoe UI', Tahoma, sans-serif">آواز</text>
+    <text x="64" y="208" fill="#E8F3F1" font-size="27" font-weight="600">Every voice heard. Every complaint answered.</text>
+    <text x="64" y="244" fill="#B9D6D0" font-size="17">Emergency help, safe reporting and public accountability for survivors</text>
+    <text x="64" y="268" fill="#B9D6D0" font-size="17">of harassment, powered by eight cooperating AI agents.</text>
+
+    <g font-size="14" font-weight="600">
+      <rect x="64" y="300" width="148" height="36" rx="18" fill="#FFFFFF" fill-opacity="0.08" stroke="#9FE0D2" stroke-opacity="0.45"/>
+      <text x="138" y="323" fill="#E8F3F1" text-anchor="middle">8 AI agents</text>
+      <rect x="224" y="300" width="148" height="36" rx="18" fill="#FFFFFF" fill-opacity="0.08" stroke="#9FE0D2" stroke-opacity="0.45"/>
+      <text x="298" y="323" fill="#E8F3F1" text-anchor="middle">3 workflows</text>
+      <rect x="384" y="300" width="178" height="36" rx="18" fill="#FFFFFF" fill-opacity="0.08" stroke="#9FE0D2" stroke-opacity="0.45"/>
+      <text x="473" y="323" fill="#E8F3F1" text-anchor="middle">Privacy by design</text>
+      <rect x="574" y="300" width="160" height="36" rx="18" fill="#9FE0D2"/>
+      <text x="654" y="323" fill="#0A2421" text-anchor="middle">Built for the world</text>
+    </g>
+  </g>
+</svg>
