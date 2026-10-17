@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AwaazEvent } from "@/lib/api";
+import { displayName } from "@/lib/workflow";
 
 const GROUPS: Record<string, string[]> = {
   Agents: ["agent.start", "agent.end", "llm.message"],
@@ -82,7 +83,7 @@ export function EventLog({ events }: { events: AwaazEvent[] }) {
                   <td className="tabular whitespace-nowrap px-4 py-1.5 text-muted">{e.ts.slice(11, 19)}</td>
                   <td className={`whitespace-nowrap px-2 py-1.5 font-semibold ${TONE[e.kind] || "text-ink-2"}`}>{e.kind}</td>
                   <td className="px-2 py-1.5 [overflow-wrap:anywhere]">
-                    <span className="text-ink">{e.node || e.agent || ""}</span>
+                    <span className="text-ink">{displayName(e.node || e.agent || "")}</span>
                     <span className="block text-muted">{JSON.stringify(e.data)}</span>
                   </td>
                 </tr>

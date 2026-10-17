@@ -27,7 +27,7 @@ export function Review({ drafts, policeText, setPoliceText, privacy, busy, revis
     <div className="appear space-y-8">
       <div>
         <h2 className="text-title font-semibold">Read both versions before anything is sent</h2>
-        <p className="mt-1 text-body text-ink-2">One goes only to the police. The other can be shared, and contains nothing that identifies you.</p>
+        <p className="mt-1 text-body text-ink-2">One goes only to the authorities. The other can be shared, and contains nothing that identifies you.</p>
       </div>
 
       <section aria-labelledby="police-version" className="border-l-4 border-ink pl-4">
@@ -35,15 +35,15 @@ export function Review({ drafts, policeText, setPoliceText, privacy, busy, revis
           <Lock size={ICON.md} strokeWidth={STROKE} className="mt-1 shrink-0" aria-hidden />
           <div>
             <h3 id="police-version" className="text-lead font-semibold">
-              Police complaint
+              Complaint for the authorities
             </h3>
             <p className="text-small text-ink-2">
-              <strong>Private.</strong> Only the police dashboard sees this. It includes your name, contact and every detail you gave.
+              <strong>Private.</strong> Only the authorities dashboard sees this. It includes your name, contact and every detail you gave.
             </p>
           </div>
         </div>
         <label htmlFor="police-text" className="sr-only">
-          Police complaint text, editable
+          Complaint for the authorities, editable
         </label>
         <textarea
           id="police-text"
@@ -66,7 +66,7 @@ export function Review({ drafts, policeText, setPoliceText, privacy, busy, revis
               Public summary
             </h3>
             <p className="text-small text-ink-2">
-              <strong>Shareable.</strong> Goes to matched activist groups now, and to news outlets only if the police take no action within 24 hours.
+              <strong>Shareable.</strong> Goes to matched activist groups now, and to news outlets only if the authorities take no action within 24 hours.
             </p>
           </div>
         </div>
@@ -78,7 +78,7 @@ export function Review({ drafts, policeText, setPoliceText, privacy, busy, revis
             <TriangleAlert size={ICON.md} strokeWidth={STROKE} className="mt-0.5 shrink-0" aria-hidden />
             <p>
               <strong>On hold.</strong> The privacy checks could not confirm this summary is free of personal details, so it will not be shared. Your
-              police complaint can still be sent. You can ask for a change and try again.
+              complaint for the authorities can still be sent. You can ask for a change and try again.
             </p>
           </div>
         )}
@@ -117,7 +117,7 @@ export function Review({ drafts, policeText, setPoliceText, privacy, busy, revis
       {revise && (
         <section className="space-y-2" aria-label="Request a change">
           <label className="block text-body font-semibold" htmlFor="revise">
-            What should change in the {revise.target === "police" ? "police complaint" : "public summary"}?
+            What should change in the {revise.target === "police" ? "complaint for the authorities" : "public summary"}?
           </label>
           <textarea id="revise" className="field text-body" dir="auto" rows={3} value={revise.text} onChange={(e) => setRevise({ ...revise, text: e.target.value })} />
           <div className="flex gap-3">
@@ -137,7 +137,7 @@ export function Review({ drafts, policeText, setPoliceText, privacy, busy, revis
         </h3>
         <ol className="mt-2 space-y-2 text-body">
           <li className="flex gap-3">
-            <span className="tabular font-mono text-muted">1</span>The police dashboard receives the full complaint.
+            <span className="tabular font-mono text-muted">1</span>The authorities dashboard receives the full complaint.
           </li>
           {clean && (
             <li className="flex gap-3">
@@ -148,7 +148,7 @@ export function Review({ drafts, policeText, setPoliceText, privacy, busy, revis
             <li className="flex gap-3">
               <span className="tabular font-mono text-muted">3</span>
               <span>
-                If the police record no action within 24 hours, news outlets receive the public summary. You can cancel this.
+                If the authorities record no action within 24 hours, news outlets receive the public summary. You can cancel this.
                 <Clock size={ICON.sm} strokeWidth={STROKE} className="ml-1 inline text-muted" aria-hidden />
               </span>
             </li>
@@ -160,7 +160,7 @@ export function Review({ drafts, policeText, setPoliceText, privacy, busy, revis
         {confirming ? (
           <div className="space-y-3" role="group" aria-label="Confirm sending">
             <p className="text-body">
-              <strong>Send now?</strong> This cannot be undone. {clean ? "The police and matched groups will receive it." : "Only the police will receive it."}
+              <strong>Send now?</strong> This cannot be undone. {clean ? "The authorities and matched groups will receive it." : "Only the authorities will receive it."}
             </p>
             <div className="grid grid-cols-[2fr_1fr] gap-3">
               <button className="btn btn-primary !min-h-14" disabled={busy} onClick={onConfirm}>
@@ -173,7 +173,7 @@ export function Review({ drafts, policeText, setPoliceText, privacy, busy, revis
           </div>
         ) : (
           <button className="btn btn-primary w-full !min-h-14" disabled={busy} onClick={() => setConfirming(true)}>
-            {clean ? "Review and send to police and groups" : "Review and send to police only"}
+            {clean ? "Review and send to authorities and groups" : "Review and send to authorities only"}
           </button>
         )}
       </div>

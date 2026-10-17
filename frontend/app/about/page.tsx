@@ -8,11 +8,11 @@ const AGENTS: [string, string][] = [
   ["Location Agent", "Reads the position her phone shares, looks up the street address and builds a map link."],
   ["Alert Agent", "Writes a short alert and sends it to her trusted contact by text, call and Discord. If it fails, a fixed template sends the same alert."],
   ["Intake Agent", "Asks one gentle question at a time, in plain English. Any question can be skipped."],
-  ["Drafting Agent", "Writes the full police complaint and a public summary, and rewrites the summary until it passes the privacy checks."],
+  ["Drafting Agent", "Writes the full complaint for the authorities and a public summary, and rewrites the summary until it passes the privacy checks."],
   ["Matching Agent", "Compares the anonymised case with activist groups and picks only the close matches."],
   ["Email Agent", "Sends the public summary, one recipient per email: first to matched groups, later to news outlets if needed."],
-  ["Police Dispatch Agent", "Submits the full complaint to the police dashboard and starts the 24-hour clock."],
-  ["Police Status Agent", "After 24 hours, checks whether the police acted. If they did not, news outlets are told."],
+  ["Authorities Dispatch Agent", "Submits the full complaint to the authorities dashboard and starts the 24-hour clock."],
+  ["Authorities Status Agent", "After 24 hours, checks whether the authorities acted. If they did not, news outlets are told."],
 ];
 
 const NUMBERS: [string, string][] = [
@@ -39,7 +39,7 @@ export default function About() {
           <h1 className="mt-3 text-display font-semibold sm:text-hero">Awaaz means voice.</h1>
           <p className="mt-4 text-lead text-ink-2">
             It does two things for someone facing harassment in Pakistan: it reaches a person she trusts the moment she is in danger, and it helps her
-            report what happened to the police without exposing who she is.
+            report what happened to the authorities without exposing who she is.
           </p>
           <p className="mt-6 border-l-4 border-danger pl-4 text-body">
             Awaaz does not replace emergency services. If you are in immediate danger, call{" "}
@@ -81,10 +81,10 @@ export default function About() {
                   <span className="tabular font-mono text-muted">1</span>She can tell what happened, in her own words and language.
                 </li>
                 <li className="flex gap-3">
-                  <span className="tabular font-mono text-muted">2</span>Awaaz writes a police complaint and a public summary. She reads both and decides.
+                  <span className="tabular font-mono text-muted">2</span>Awaaz writes a complaint for the authorities and a public summary. She reads both and decides.
                 </li>
                 <li className="flex gap-3">
-                  <span className="tabular font-mono text-muted">3</span>The police get the complaint. Activist groups get the summary. If the police do
+                  <span className="tabular font-mono text-muted">3</span>The authorities get the complaint. Activist groups get the summary. If the authorities do
                   nothing for 24 hours, news outlets get it too.
                 </li>
               </ol>
@@ -111,7 +111,7 @@ export default function About() {
             <tbody className="divide-y divide-line">
               <tr>
                 <th scope="row" className="py-3 pr-4 align-top font-semibold">
-                  Police
+                  Authorities
                 </th>
                 <td className="py-3 text-ink-2">The full complaint she approved, with her name and contact, stored encrypted.</td>
               </tr>
@@ -125,7 +125,7 @@ export default function About() {
                 <th scope="row" className="py-3 pr-4 align-top font-semibold">
                   News outlets
                 </th>
-                <td className="py-3 text-ink-2">The same public summary, only if the police record no action within 24 hours, and only if she has not cancelled.</td>
+                <td className="py-3 text-ink-2">The same public summary, only if the authorities record no action within 24 hours, and only if she has not cancelled.</td>
               </tr>
               <tr>
                 <th scope="row" className="py-3 pr-4 align-top font-semibold">
@@ -211,7 +211,7 @@ export default function About() {
               Limits
             </h2>
             <ul className="mt-3 list-disc space-y-2 pl-5 text-body text-ink-2">
-              <li>Awaaz cannot make the police or anyone else act.</li>
+              <li>Awaaz cannot make the authorities or anyone else act.</li>
               <li>Location depends on her phone sharing it; indoors it can be approximate.</li>
               <li>The privacy checks are strict but automated, which is why she always reads the summary first.</li>
               <li>Messages depend on the network and on the providers this server is set up with.</li>
@@ -240,8 +240,8 @@ export default function About() {
         </section>
 
         <p className="border-t border-line pt-6 text-small text-ink-2">
-          Police officers use a separate{" "}
-          <Link href="/police" className="font-semibold underline underline-offset-4">
+          The authorities use a separate{" "}
+          <Link href="/authorities" className="font-semibold underline underline-offset-4">
             complaint dashboard
           </Link>
           .

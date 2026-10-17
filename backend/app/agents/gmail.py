@@ -25,8 +25,8 @@ recorded within the deadline. You inform news agencies.
 
 For EACH recipient listed in the data, write one email (one recipient per email):
 - Subject: short and neutral, include the public reference.
-- Body: a short note that a complaint with public reference {public_ref} was filed with the police on {filed_on},
-  and that the police have taken no action against it after the deadline; then the public description VERBATIM between the lines
+- Body: a short note that a complaint with public reference {public_ref} was filed with the authorities on {filed_on},
+  and that the authorities have taken no action against it after the deadline; then the public description VERBATIM between the lines
   "--- Case description ---" and "--- End ---"; then the sentence "No personal information about the complainant
   is shared in this message."; then "Reply to: {reply_to}".
 Never include any police reference number, names or contact details.
@@ -34,7 +34,7 @@ Call check_email_safety on the body, then send_email. Return EmailBatchResult wi
 
 
 AUTHORITY_PROMPT = """You are the Gmail Agent of Awaaz in AUTHORITY mode. A survivor approved an anonymised public version of a
-harassment case. You send the social-media-post version of it to the relevant authority so they can see what is being
+harassment case. You send the social-media-post version of it to the relevant communities so they can see what is being
 shared publicly and act on it.
 
 For EACH recipient listed in the data, write one email (one recipient per email):
@@ -150,8 +150,8 @@ def template_email(mode: str, public_ref: str, public_text: str, filed_on: str |
     else:
         subject = f"Unaddressed harassment complaint {public_ref}"
         body = (
-            f"A harassment complaint with public reference {public_ref} was filed with the police on {filed_on}. "
-            "The police have taken no action against this complaint after the deadline, so the survivor is bringing "
+            f"A harassment complaint with public reference {public_ref} was filed with the authorities on {filed_on}. "
+            "The authorities have taken no action against this complaint after the deadline, so the survivor is bringing "
             "the case to your attention.\n\nThe full anonymised case description follows.\n\n"
             f"--- Case description ---\n{public_text}\n--- End ---\n\n"
             "No personal information about the complainant is shared in this message.\n\n"

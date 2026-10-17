@@ -14,7 +14,7 @@ export function Welcome({ onContinue, onEmergency }: { onContinue: () => void; o
         <p className="label">Awaaz</p>
         <h1 className="mt-3 text-display font-semibold sm:text-hero">Help when you need it. A report when you are ready.</h1>
         <p className="mt-4 text-lead text-ink-2">
-          Awaaz alerts someone you trust with your location in one tap, or helps you report harassment to the police without exposing who you are.
+          Awaaz alerts someone you trust with your location in one tap, or helps you report harassment to the authorities without exposing who you are.
         </p>
       </div>
 

@@ -15,7 +15,7 @@ const LANE_HEAD = 34;
 
 const COL = [0, 300, 600];
 const TOP = 140; // first row of the Emergency and Report lanes
-const BOTTOM = TOP + 3 * (H + GAP) + 50; // first row of the Police, Public and Authority lanes
+const BOTTOM = TOP + 3 * (H + GAP) + 50; // first row of the Authorities, Public and Communities lanes
 const row = (base: number, i: number) => base + i * (H + GAP);
 
 const POS: Record<string, { x: number; y: number }> = {
@@ -38,9 +38,9 @@ const POS: Record<string, { x: number; y: number }> = {
 const LANES = [
   { id: "lane-emergency", label: "Emergency", sub: "if she is in danger", x: COL[0], y: TOP, rows: 2 },
   { id: "lane-report", label: "Report", sub: "her account, her approval", x: COL[1], y: TOP, rows: 3 },
-  { id: "lane-police", label: "Police", sub: "complaint and escalation", x: COL[0], y: BOTTOM, rows: 4 },
+  { id: "lane-police", label: "Authorities", sub: "complaint", x: COL[0], y: BOTTOM, rows: 4 },
   { id: "lane-public", label: "Public", sub: "activist groups", x: COL[1], y: BOTTOM, rows: 2 },
-  { id: "lane-authority", label: "Authority", sub: "post version", x: COL[2], y: BOTTOM, rows: 1 },
+  { id: "lane-authority", label: "Communities", sub: "post version", x: COL[2], y: BOTTOM, rows: 1 },
 ];
 
 const KIND_ICON = { agent: Bot, human: UserRound, timer: Clock, gate: GitFork };
