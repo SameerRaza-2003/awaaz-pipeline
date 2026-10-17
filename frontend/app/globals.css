@@ -100,7 +100,6 @@
   --font-sans: var(--font-atkinson), system-ui, sans-serif;
   --font-heading: var(--font-newsreader), Georgia, serif;
   --font-mono: var(--font-atkinson-mono), ui-monospace, monospace;
-  --font-urdu: var(--font-nastaliq), var(--font-atkinson), serif;
 
   --text-*: initial;
   --text-caption: 0.8125rem;
@@ -205,13 +204,6 @@
   .skip-link:focus {
     top: 0.75rem;
   }
-}
-
-/* Urdu: Nastaliq stacks diagonally and needs generous leading. Unlayered on purpose: it must win over utilities. */
-.urdu,
-:lang(ur) {
-  font-family: var(--font-nastaliq), var(--font-atkinson), serif;
-  line-height: 2.1;
 }
 
 /* ---------------- components ---------------- */

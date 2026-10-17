@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Atkinson_Hyperlegible_Mono, Atkinson_Hyperlegible_Next, Newsreader, Noto_Nastaliq_Urdu } from "next/font/google";
+import { Atkinson_Hyperlegible_Mono, Atkinson_Hyperlegible_Next, Newsreader } from "next/font/google";
 import "./globals.css";
 import { Discreet } from "@/components/Discreet";
 import { Nav } from "@/components/Nav";
@@ -8,8 +8,6 @@ import { Nav } from "@/components/Nav";
 const atkinson = Atkinson_Hyperlegible_Next({ variable: "--font-atkinson", subsets: ["latin"], display: "swap", preload: true });
 const atkinsonMono = Atkinson_Hyperlegible_Mono({ variable: "--font-atkinson-mono", subsets: ["latin"], display: "swap", preload: false });
 const newsreader = Newsreader({ variable: "--font-newsreader", subsets: ["latin"], display: "swap", preload: false, weight: ["500", "600"] });
-// Downloaded only when Urdu text is actually on screen.
-const nastaliq = Noto_Nastaliq_Urdu({ variable: "--font-nastaliq", subsets: ["arabic"], display: "swap", preload: false, weight: ["400", "600"] });
 
 export const metadata: Metadata = {
   title: "Awaaz",
@@ -30,7 +28,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${atkinson.variable} ${atkinsonMono.variable} ${newsreader.variable} ${nastaliq.variable}`}>
+    <html lang="en" className={`${atkinson.variable} ${atkinsonMono.variable} ${newsreader.variable}`}>
       <body className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
         <a href="#main" className="skip-link">
           Skip to content

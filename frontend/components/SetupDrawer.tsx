@@ -18,7 +18,6 @@ export function SetupDrawer({
   const [discord, setDiscord] = useState("");
   const [hasDiscord, setHasDiscord] = useState(false);
   const [country, setCountry] = useState("PK");
-  const [locale, setLocale] = useState("en");
   const [isDiscreet, setIsDiscreet] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -33,7 +32,6 @@ export function SetupDrawer({
     api<SessionInfo>(`/api/sessions/${sessionId}`)
       .then((s) => {
         setCountry(s.country);
-        setLocale(s.locale === "roman" ? "roman" : "en");
         setSignedIn(!!s.signed_in);
         if (s.trusted_contact) {
           setName(s.trusted_contact.is_default ? "" : s.trusted_contact.name);
@@ -71,7 +69,6 @@ export function SetupDrawer({
                 }
               : undefined,
           country,
-          locale,
         },
       });
       if (discord) {
@@ -286,20 +283,6 @@ export function SetupDrawer({
                   <option value="BD">Bangladesh</option>
                   <option value="GB">United Kingdom</option>
                   <option value="US">United States</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="set-lang" className="text-small font-semibold">
-                  Language
-                </label>
-                <select
-                  id="set-lang"
-                  className="field mt-1"
-                  value={locale}
-                  onChange={(e) => setLocale(e.target.value)}
-                >
-                  <option value="en">English</option>
-                  <option value="roman">Roman Urdu</option>
                 </select>
               </div>
             </fieldset>

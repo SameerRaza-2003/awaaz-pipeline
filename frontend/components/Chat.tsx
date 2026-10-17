@@ -4,7 +4,7 @@ import { ArrowUp, Check, Loader2, RotateCcw, Settings2, ShieldAlert } from "luci
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Emergency, EmergencyState } from "@/components/chat/Emergency";
 import { Gate, HelpProps, HelpStates, helpActive } from "@/components/chat/Gate";
-import { EmergencyNumbers, ICON, Message, Msg, STROKE, Typing, hasUrdu } from "@/components/chat/parts";
+import { EmergencyNumbers, ICON, Message, Msg, STROKE, Typing } from "@/components/chat/parts";
 import { Receipt as ReceiptView } from "@/components/chat/Receipt";
 import { PrivacyEvidence, Review } from "@/components/chat/Review";
 import { api, ApiError, AwaazEvent, Health, Receipt, SessionInfo, store } from "@/lib/api";
@@ -16,12 +16,6 @@ type Props = {
   onNewSession: () => void;
   onOpenSetup: () => void;
 };
-
-const LANGS = [
-  { id: "en", label: "English", placeholder: "Write your answer" },
-  { id: "roman", label: "Roman Urdu", placeholder: "Apna jawab likhein" },
-] as const;
-type Lang = (typeof LANGS)[number]["id"];
 
 const STEP: Record<string, [number, string]> = {
   ask_report: [1, "Check-in"],
@@ -47,7 +41,6 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
   const [policeText, setPoliceText] = useState("");
   const [revise, setRevise] = useState<{ target: "public" | "police"; text: string } | null>(null);
   const [cancelled, setCancelled] = useState(false);
-  const [lang, setLang] = useState<Lang>("en");
   const [now, setNow] = useState(() => Date.now());
   const watchId = useRef<number | null>(null);
   const lastPost = useRef(0);
@@ -59,7 +52,6 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
       const s = await api<SessionInfo>(`/api/sessions/${sessionId}`);
       setSession(s);
       if (s.drafts) setPoliceText((p) => p || s.drafts!.police_text);
-      if (s.locale === "roman" || s.locale === "en") setLang(s.locale);
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) onNewSession();
     }
@@ -270,12 +262,6 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
       setTimeout(() => composer.current?.focus(), 50);
     });
 
-  const chooseLang = (l: Lang) => {
-    setLang(l);
-    api(`/api/sessions/${sessionId}/settings`, { method: "PUT", body: { locale: l } }).catch(() => {});
-    setTimeout(() => composer.current?.focus(), 0);
-  };
-
   const sendMessage = (text: string) => {
     const t = text.trim();
     if (!t || busy) return;
@@ -380,8 +366,6 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
   };
   const showHelpShortcut = ["ask_report", "intake", "drafting", "review"].includes(phase) && !helpActive(help);
   const step = STEP[phase];
-  const langDef = LANGS.find((l) => l.id === lang) ?? LANGS[0];
-  const urduInput = hasUrdu(input);
 
   // ---------------- render ----------------
   return (
@@ -402,7 +386,7 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
               Get help<span className="hidden sm:inline"> now</span>
             </button>
           )}
-          <button className="btn btn-quiet btn-compact !min-h-11 !no-underline" onClick={onOpenSetup} aria-label="Setup: trusted contact, country, language">
+          <button className="btn btn-quiet btn-compact !min-h-11 !no-underline" onClick={onOpenSetup} aria-label="Setup: trusted contact and country">
             <Settings2 size={ICON.md} strokeWidth={STROKE} aria-hidden />
             <span className="hidden sm:inline">Setup</span>
           </button>
@@ -581,19 +565,6 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
           {phase === "intake" && !helpActive(help) && (
             <div className="border-t border-line bg-surface px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-6">
               <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <div role="radiogroup" aria-label="Language" className="flex rounded-md border border-line-strong p-0.5">
-                  {LANGS.map((l) => (
-                    <button
-                      key={l.id}
-                      role="radio"
-                      aria-checked={lang === l.id}
-                      onClick={() => chooseLang(l.id)}
-                      className={`min-h-9 rounded-sm px-2.5 text-caption font-semibold ${lang === l.id ? "bg-ink text-paper" : "text-ink-2 hover:text-ink"}`}
-                    >
-                      {l.label}
-                    </button>
-                  ))}
-                </div>
                 <div className="flex gap-4 text-small">
                   <button className="btn-quiet min-h-9 disabled:opacity-40" disabled={busy} onClick={() => sendMessage("skip")}>
                     Skip question
@@ -617,10 +588,9 @@ export function Chat({ sessionId, events, health, onNewSession, onOpenSetup }: P
                   id="composer"
                   ref={composer}
                   dir="auto"
-                  lang={urduInput ? "ur" : undefined}
                   rows={1}
-                  className={`field max-h-40 min-h-12 flex-1 resize-none ${urduInput ? "urdu" : ""}`}
-                  placeholder={langDef.placeholder}
+                  className="field max-h-40 min-h-12 flex-1 resize-none"
+                  placeholder="Write your answer"
                   value={input}
                   onChange={(e) => {
                     setInput(e.target.value);

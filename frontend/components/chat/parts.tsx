@@ -5,24 +5,15 @@ import { Check, Loader2, Minus, TriangleAlert } from "lucide-react";
 export const ICON = { sm: 16, md: 20, lg: 24 } as const;
 export const STROKE = 1.75;
 
-const URDU_RE = /[؀-ۿ]/;
-export const hasUrdu = (t: string) => URDU_RE.test(t);
-
-/** Urdu script gets lang="ur" (Nastaliq, generous leading); direction always follows the first strong character. */
-export function scriptProps(text: string) {
-  return hasUrdu(text) ? ({ lang: "ur", dir: "auto", className: "urdu" } as const) : ({ dir: "auto", className: "" } as const);
-}
-
 export type Msg = { role: "user" | "assistant"; text: string };
 
 /** A conversation, not a widget: Awaaz speaks in plain text, her words sit in a quiet block on the right. */
 export function Message({ m }: { m: Msg }) {
-  const sp = scriptProps(m.text);
   if (m.role === "assistant")
     return (
       <div className="appear max-w-prose">
         <p className="sr-only">Awaaz:</p>
-        <p {...sp} className={`whitespace-pre-wrap text-body text-ink ${sp.className}`}>
+        <p dir="auto" className="whitespace-pre-wrap text-body text-ink">
           {m.text}
         </p>
       </div>
@@ -30,7 +21,7 @@ export function Message({ m }: { m: Msg }) {
   return (
     <div className="appear flex justify-end">
       <p className="sr-only">You:</p>
-      <p {...sp} className={`max-w-[85%] whitespace-pre-wrap rounded-md bg-sunken px-4 py-3 text-body text-ink ${sp.className}`}>
+      <p dir="auto" className="max-w-[85%] whitespace-pre-wrap rounded-md bg-sunken px-4 py-3 text-body text-ink">
         {m.text}
       </p>
     </div>

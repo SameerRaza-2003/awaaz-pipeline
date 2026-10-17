@@ -144,7 +144,6 @@ function ProfileForm({ profile, onSaved, onSignOut }: { profile: Profile; onSave
   const [phone, setPhone] = useState(profile.trusted_contact?.phone || "");
   const [discord, setDiscord] = useState("");
   const [country, setCountry] = useState(profile.country || "PK");
-  const [locale, setLocale] = useState(profile.locale === "roman" ? "roman" : "en");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -157,7 +156,7 @@ function ProfileForm({ profile, onSaved, onSignOut }: { profile: Profile; onSave
     try {
       const p = await api<Profile>("/api/me", {
         method: "PUT",
-        body: { display_name: displayName, trusted_contact: { name, phone: phone || null, discord_webhook: discord || undefined }, country, locale },
+        body: { display_name: displayName, trusted_contact: { name, phone: phone || null, discord_webhook: discord || undefined }, country },
       });
       setDiscord("");
       onSaved(p);
@@ -243,15 +242,6 @@ function ProfileForm({ profile, onSaved, onSignOut }: { profile: Profile; onSave
               <option value="BD">Bangladesh</option>
               <option value="GB">United Kingdom</option>
               <option value="US">United States</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="p-lang" className="text-small font-semibold">
-              Language
-            </label>
-            <select id="p-lang" className="field mt-1" value={locale} onChange={(e) => setLocale(e.target.value)}>
-              <option value="en">English</option>
-              <option value="roman">Roman Urdu</option>
             </select>
           </div>
         </fieldset>
