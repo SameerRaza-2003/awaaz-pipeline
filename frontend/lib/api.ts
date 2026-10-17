@@ -22,6 +22,14 @@ export type Health = {
   demo_routes: boolean;
   escalation_delay_seconds: number;
   match_threshold: number;
+  demo: {
+    default_contact: string | null;
+    default_discord: boolean;
+    sms_provider: string;
+    call_provider: string;
+    email_configured: boolean;
+    authorities_login: { username: string; password: string };
+  } | null;
 };
 
 export type Drafts = {

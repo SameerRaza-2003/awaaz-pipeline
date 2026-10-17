@@ -1,4 +1,5 @@
 import asyncio
+import re
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -75,6 +76,20 @@ def create_app(with_lifespan: bool = True) -> FastAPI:
             "demo_routes": s.enable_demo_routes,
             "escalation_delay_seconds": s.escalation_delay_seconds,
             "match_threshold": s.match_threshold,
+            # Shown on the judges' guide. Only in demo mode, and the number is masked.
+            "demo": _demo_info(s) if s.enable_demo_routes else None,
+        }
+
+    def _demo_info(s):
+        digits = re.sub(r"\D", "", s.default_trusted_contact)
+        masked = f"+{digits[:2]} ••• •••{digits[-4:]}" if len(digits) > 6 else None
+        return {
+            "default_contact": masked,
+            "default_discord": bool(s.default_discord_webhook),
+            "sms_provider": s.sms_provider,
+            "call_provider": s.call_provider,
+            "email_configured": bool(s.smtp_user and s.smtp_app_password),
+            "authorities_login": {"username": s.police_demo_user, "password": s.police_demo_password},
         }
 
     @app.get("/api/costs")
