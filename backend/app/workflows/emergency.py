@@ -6,7 +6,8 @@ from typing import Any
 
 from sqlalchemy import select
 
-from app.agents.emergency_agents import ensure_link, location_agent, send_discord, alert_agent
+from app.accounts import account_name
+from app.agents.emergency_agents import alert_agent, ensure_link, location_agent, send_discord
 from app.agents.runner import AgentFailed, runner, wrap_data
 from app.agents.schemas import AlertResult, LocationReport
 from app.config import get_settings, normalize_recipient
@@ -101,27 +102,33 @@ async def deterministic_location(session_id: str) -> LocationReport:
     )
 
 
-def template_sms(name: str, report: LocationReport) -> str:
+def _who(name: str, sender: str | None) -> str:
+    return sender or f"the person who listed you ({name}) as a trusted contact"
+
+
+def template_sms(name: str, report: LocationReport, sender: str | None = None) -> str:
+    who = _who(name, sender)
     if report.location_available:
         where = report.address or f"{report.lat:.5f}, {report.lng:.5f}"
         return (
-            f"URGENT from Awaaz: the person who listed you ({name}) as a trusted contact says they may be in danger "
+            f"URGENT from Awaaz: {who} says they may be in danger "
             f"and need help now. Location: {where} {report.maps_link} (updated {_hhmm(report.captured_at)} UTC). "
             "Please call them or go to them."
         )
     typed = f" They said they are near: {report.note}." if report.note else ""
     return (
-        f"URGENT from Awaaz: the person who listed you ({name}) as a trusted contact says they may be in danger "
+        f"URGENT from Awaaz: {who} says they may be in danger "
         f"and need help now. Their live location is unavailable.{typed} Please call them now."
     )
 
 
-def template_call(report: LocationReport) -> str:
+def template_call(report: LocationReport, sender: str | None = None) -> str:
     where = f"near {report.address}" if report.address else "at the location sent to you by text message"
     if not report.location_available:
         where = "but their location is not available"
+    who = sender or "Someone who listed you as a trusted contact"
     return (
-        "This is an urgent call from Awaaz. Someone who listed you as a trusted contact says they may be in danger "
+        f"This is an urgent call from Awaaz. {who} says they may be in danger "
         f"and need help now, {where}. Please check your text messages and contact them immediately."
     )
 
@@ -146,6 +153,7 @@ async def run(session_id: str, emergency_id: int) -> dict[str, Any]:
     s = get_settings()
     name, call_to, sms_to = await resolve_recipients(session_id)
     discord_url = await get_contact_discord(session_id)
+    sender = await account_name(session_id)
     if not call_to and not discord_url:
         await bus.publish(
             session_id,
@@ -188,10 +196,11 @@ async def run(session_id: str, emergency_id: int) -> dict[str, Any]:
             "call_recipient": call_to or "",
             "dispatch_key": key,
             "discord_url": discord_url,
+            "sender": sender,
         }
         prompt = wrap_data(
             "data",
-            f"contact_name: {name}\nsms_recipients: {sms_to}\ncall_recipient: {call_to or 'none'}\n"
+            f"sender_name: {sender or 'none'}\ncontact_name: {name}\nsms_recipients: {sms_to}\ncall_recipient: {call_to or 'none'}\n"
             f"discord_available: {bool(discord_url)}\nlocation_report: {report.model_dump_json()}",
         )
         try:
@@ -204,7 +213,7 @@ async def run(session_id: str, emergency_id: int) -> dict[str, Any]:
             sent = res.output
         except AgentFailed:
             await bus.publish(session_id, "step", node="alert_agent", data={"fallback": True, "message": "Alert Agent failed; sending with the fixed template"})
-        await ensure_alert_sent(session_id, key, name or "trusted contact", report, sms_to, call_to, discord_url)
+        await ensure_alert_sent(session_id, key, name or "trusted contact", report, sms_to, call_to, discord_url, sender)
 
     async with SessionLocal() as db:
         em = await db.get(Emergency, emergency_id)
@@ -228,12 +237,12 @@ async def deterministic_location_safe(session_id: str) -> LocationReport:
         return LocationReport(location_available=False)
 
 
-async def ensure_alert_sent(session_id, key, name, report, sms_to, call_to, discord_url=None) -> None:
+async def ensure_alert_sent(session_id, key, name, report, sms_to, call_to, discord_url=None, sender=None) -> None:
     """Check dispatch_log and fill every gap with the fixed template. Idempotent by construction."""
     async with SessionLocal() as db:
         rows = (await db.scalars(select(DispatchLog).where(DispatchLog.public_ref == key))).all()
     done = {(r.kind, r.recipient) for r in rows if r.status in ("sent", "dry_run", "blocked", "skipped", "pending")}
-    body = template_sms(name, report)
+    body = template_sms(name, report, sender)
     for to in sms_to:
         if ("sms", to) not in done:
             await bus.publish(session_id, "step", node="alert_agent", data={"fallback": True, "message": f"Fallback SMS to {to}"})
@@ -245,7 +254,7 @@ async def ensure_alert_sent(session_id, key, name, report, sms_to, call_to, disc
     if call_to and ("call", call_to) not in done:
         await bus.publish(session_id, "step", node="alert_agent", data={"fallback": True, "message": f"Fallback call to {call_to}"})
         await guard.dispatch(kind="call", key=key, recipient=call_to, session_id=session_id,
-                             payload={"say_text": template_call(report)}, agent="fallback", node="alert_agent")
+                             payload={"say_text": template_call(report, sender)}, agent="fallback", node="alert_agent")
 
 
 # ---------------- Tracking (tool-only, no LLM) ----------------
@@ -268,7 +277,8 @@ async def tracking_update(session_id: str, lat: float, lng: float, accuracy: flo
         row.last_update_sent_at = now
         await db.commit()
     link = maps.build_maps_link(lat, lng)
-    body = f"Awaaz location update {n}: {link} (updated {now.strftime('%H:%M')} UTC)"
+    sender = await account_name(session_id)
+    body = f"Awaaz location update {n}{f' for {sender}' if sender else ''}: {link} (updated {now.strftime('%H:%M')} UTC)"
     await bus.publish(session_id, "tool.start", agent="tracking_updater", node="alert_agent",
                       data={"tool": "send_sms", "args": {"update": n, "maps_link": link}})
     for to in sms_to:
@@ -290,7 +300,9 @@ async def mark_safe(session_id: str) -> dict:
         row.ended_at = utcnow()
         await db.commit()
     _, _, sms_to = await resolve_recipients(session_id)
-    safe_text = "Awaaz: the person who sent you the emergency alert has marked themselves SAFE. Location tracking has stopped."
+    sender = await account_name(session_id)
+    who = sender or "the person who sent you the emergency alert"
+    safe_text = f"Awaaz: {who} has marked themselves SAFE. Location tracking has stopped."
     for to in sms_to:
         await guard.dispatch(kind="sms", key=f"em{em.id}:safe", recipient=to, session_id=session_id,
                              payload={"body": safe_text}, agent="tracking_updater", node="alert_agent")

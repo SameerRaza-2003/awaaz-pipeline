@@ -126,6 +126,16 @@ async def delete_user(user_id: str) -> None:
         await db.commit()
 
 
+async def account_name(session_id: str) -> str | None:
+    """How alerts name a signed-in person: her display name, else her username. None when signed out."""
+    async with SessionLocal() as db:
+        sess = await db.get(SessionRow, session_id)
+        user = await db.get(UserRow, sess.user_id) if sess and sess.user_id else None
+    if not user:
+        return None
+    return (profile_of(user).get("display_name") or "").strip() or user.username
+
+
 async def account_contact(session_id: str) -> dict[str, Any] | None:
     """The trusted contact saved in the signed-in account behind this session, if any."""
     async with SessionLocal() as db:
